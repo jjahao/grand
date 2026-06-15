@@ -65,7 +65,7 @@
       '.gl-h2{font-size:20px;font-weight:900;text-align:center;margin:0 0 4px;letter-spacing:-.3px}',
       '.gl-h2 small{display:block;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:2.5px;margin-bottom:8px}',
       /* HERO（精緻暖酒紅，名牌感 + 溫暖） */
-      '#gl-hero{background:linear-gradient(160deg,var(--wine) 0%,#4A2A22 55%,#6B3A28 100%);color:#fff;text-align:center;padding:38px 22px 30px}',
+      '#gl-hero{background:radial-gradient(120% 90% at 50% 0%,rgba(205,163,73,.22),transparent 55%),linear-gradient(160deg,var(--wine) 0%,#4A2A22 55%,#6B3A28 100%);color:#fff;text-align:center;padding:40px 22px 32px}',
       '#gl-hero .eye{font-size:12px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:0 0 10px}',
       '#gl-hero h1{font-size:33px;font-weight:900;letter-spacing:-1px;margin:0 0 8px}',
       '#gl-hero .sub{font-size:14px;color:#EDE0D2;margin:0 0 22px;line-height:1.6}',
@@ -111,13 +111,13 @@
       '#gl-band{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff;text-align:center;padding:34px 22px}',
       '#gl-band .bt{font-size:19px;font-weight:900;margin:0 0 16px;line-height:1.4}',
       '#gl-band .gl-cta{background:#fff;color:var(--buy)!important;box-shadow:0 8px 22px rgba(0,0,0,.18)}',
-      /* LINE / QR */
-      '#gl-line{background:#0B3D26;color:#fff;text-align:center}',
-      '#gl-line .gl-h2{color:#fff}',
-      '#gl-line .gl-h2 small{color:#8FE9B6}',
-      '#gl-line .desc{font-size:13px;color:#CFE9D7;margin:0 0 18px}',
+      /* LINE / QR（改淺色清爽，更乾淨亮眼） */
+      '#gl-line{background:linear-gradient(180deg,#F1FBF5,#E6F7EC);text-align:center;border-top:1px solid #D6EFDD}',
+      '#gl-line .gl-h2{color:var(--ink)}',
+      '#gl-line .gl-h2 small{color:var(--line)}',
+      '#gl-line .desc{font-size:13px;color:var(--ink2);margin:0 0 18px}',
       '.gl-qrs{display:flex;gap:18px;justify-content:center;margin:18px 0 0;flex-wrap:wrap}',
-      '.gl-qr{background:#fff;border-radius:12px;padding:8px;width:140px}',
+      '.gl-qr{background:#fff;border-radius:14px;padding:9px;width:140px;box-shadow:0 4px 14px rgba(6,150,70,.12)}',
       '.gl-qr img{width:124px;height:124px;object-fit:contain;display:block;border-radius:6px}',
       '.gl-qr .lb{font-size:12px;font-weight:700;color:var(--ink);margin-top:7px;line-height:1.3}',
       '.gl-qr .lb b{color:var(--line)}',
