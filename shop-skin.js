@@ -737,7 +737,11 @@
           if (rule.ask) return;
           var step = rule.step || 1, min = rule.min || 1;
           var cur = +n.value || min;
-          var next = cur + dir * step;
+          // 若目前值不在合法序列上，先進位到最近的合法值；之後再按 step 跳
+          var off = (cur - min) % step;
+          var next;
+          if (off !== 0) next = dir > 0 ? (cur - off + step) : Math.max(min, cur - off);
+          else next = cur + dir * step;
           if (next < min) next = min;
           n.value = clampQty(next);
         });
