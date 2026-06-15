@@ -11,7 +11,8 @@
 
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
-  var MEMBER = 'https://grand.shop2000.com.tw/member';
+  var MEMBER = 'https://grand.shop2000.com.tw/member'; // 註冊/加入會員頁
+  var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
   var QR_LINE = 'https://img2.shop2000.com.tw/75210/self/j20251111100158_o.jpg';
   var QR_WECHAT = 'https://img2.shop2000.com.tw/75210/self/j20230428133953_o.jpg';
 
@@ -167,7 +168,7 @@
       '</div>' +
       '<div class="gh-member">' +
         '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
-        '<a class="ghm ghm-login" href="' + MEMBER + '">👤 會員登入</a>' +
+        '<a class="ghm ghm-login" href="' + LOGIN + '">👤 會員登入</a>' +
       '</div>' +
     '</section>' +
 
