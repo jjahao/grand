@@ -157,7 +157,7 @@
       '<h1>GRAND 天倉</h1>' +
       '<p class="sub">日本各大百貨・批店精選<br>每日上新 ・ 原裝直送台灣到府</p>' +
       '<div class="gl-btns">' +
-        '<a class="gl-cta gl-buy" href="' + STORE + '">🛒 立即逛商品（146 件）</a>' +
+        '<a class="gl-cta gl-buy" href="' + STORE + '">🛒 立即逛商品（2300+ 件）</a>' +
         '<a class="gl-cta gl-ghost" href="' + LINE + '" target="_blank" rel="noopener">加 LINE 看新貨</a>' +
       '</div>' +
     '</section>' +
