@@ -63,12 +63,36 @@
         <span class="lb-price" id="lbPrice"></span>
       </div>
       <p class="lb-desc" id="lbDesc"></p>
-      <a id="lbBuyBtn" class="lb-buy-btn" href="#" target="_blank" rel="noopener">
-        立即到官網購買 →
-      </a>
+      <button id="lbAddBtn" class="lb-buy-btn" type="button">🛒 加入購物車</button>
       <a class="lb-line-btn" href="https://line.me/ti/p/~@562spzag" target="_blank" rel="noopener">
         LINE 詢問這件
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 購物車浮動列 ===== -->
+<button id="cartBar" class="cart-bar" type="button" hidden>
+  <span class="cart-bar-ic">🛒</span>
+  <span id="cartBarText" class="cart-bar-text">購物車</span>
+  <span class="cart-bar-go">查看 →</span>
+</button>
+
+<!-- ===== 購物車抽屜 ===== -->
+<div id="cartDrawer" class="cart-drawer" hidden role="dialog" aria-modal="true">
+  <div class="cart-backdrop" id="cartBackdrop"></div>
+  <div class="cart-panel">
+    <div class="cart-head">
+      <span class="cart-title">🛒 我的購物車</span>
+      <button class="cart-close" id="cartClose" type="button" aria-label="關閉">✕</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div id="cartEmpty" class="cart-empty" hidden>購物車是空的，去挑幾樣吧！</div>
+    <div class="cart-foot">
+      <div class="cart-total-row"><span>合計</span><span id="cartTotal" class="cart-total">NT$0</span></div>
+      <button id="cartLineBtn" class="cart-line-btn" type="button">📩 用 LINE 送出訂單</button>
+      <a id="cartShopBtn" class="cart-shop-btn" href="https://grand.shop2000.com.tw/" target="_blank" rel="noopener">到官網結帳</a>
+      <p class="cart-note">送出後訂單明細會自動複製，貼到 LINE 給我們即可 🙌</p>
     </div>
   </div>
 </div>
