@@ -622,11 +622,17 @@
     });
     renderPrettyGrid(items);
     setInterval(gpSyncCount, 1500);
-    // 換頁（原生分頁可能用 AJAX 換掉商品）→ 觀察商品變動就重建格子
-    if (cont) {
-      var t; var obs = new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { var it = gatherProducts(); if (it.length) renderPrettyGrid(it); }, 350); });
-      try { obs.observe(cont, { childList: true, subtree: true }); } catch (e) {}
-    }
+    // #plist_tb(真正商品清單)常晚於推薦區載入/換頁也會換 → 觀察整個 #main_width，
+    // 一變動就重新隱藏原生清單 + 用 #plist_tb 重建格子。(#gp-wrap 在 #main_width 外，不會觸發迴圈)
+    var watch = document.getElementById('main_width') || document.body;
+    var t; var obs = new MutationObserver(function () {
+      clearTimeout(t); t = setTimeout(function () {
+        var pls2 = document.querySelectorAll('[id^="plist_tb"]');
+        for (var k = 0; k < pls2.length; k++) pls2[k].style.setProperty('display', 'none', 'important');
+        var it = gatherProducts(); if (it.length) renderPrettyGrid(it);
+      }, 300);
+    });
+    try { obs.observe(watch, { childList: true, subtree: true }); } catch (e) {}
   }
   function tryPrettyList() {
     // 商品(img.pimg)常較晚載入，輪詢最多 ~8 秒
