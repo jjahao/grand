@@ -54,6 +54,15 @@ body {
 }
 .logo-text { font-size: 18px; font-weight: 900; letter-spacing: -0.3px; }
 .logo-sub { font-size: 11px; color: var(--gold); font-weight: 700; margin-left: -2px; }
+.hd-actions { display: flex; align-items: center; gap: 7px; }
+.hd-member {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 800; color: var(--ink);
+  text-decoration: none; background: #fff;
+  border: 1.5px solid var(--ink); border-radius: 20px;
+  padding: 6px 12px; white-space: nowrap;
+}
+.hd-member:active { background: var(--bg); }
 .hd-line {
   display: flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 700; color: #fff;
