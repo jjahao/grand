@@ -10,7 +10,7 @@
   // 後台大多不套用皮膚，但允許 mem_login_pop.aspx 執行（用來處理登入後的 top-level 導向）
   if (location.pathname.indexOf('/shop2000_prog') === 0 && location.pathname.indexOf('/shop2000_prog/member/mem_login_pop.aspx') !== 0) return; // 後台不套
 
-  var STORE = 'https://jjahao.github.io/grand/';
+  var STORE = '/product'; // 官網本站商品列表(漂亮格已套);原外部目錄 jjahao.github.io/grand 已淘汰
   var LINE = 'https://line.me/ti/p/~@562spzag';
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
   var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
