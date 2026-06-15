@@ -1,14 +1,12 @@
 GRAND 首頁 showcase 圖片來源與授權
 ======================================
-全部為 Pexels 免費圖庫，Pexels License：可免費商用、可修改、免署名。
-https://www.pexels.com/license/
+gift.jpg     - Pexels 免費商用圖庫 photo 29873592（精緻包裝禮盒，無 logo）
+beauty.jpg   - Pexels 免費商用圖庫 photo 5240623（保養品平拍，無 logo）
+luxury.jpg   - James 自有實拍（名牌精品包 618550392825053379）
+shopping.jpg - James 自有實拍（2026.05.14 量販店_29，MDM 直購）
+costco.jpg   - James 自有實拍（2026.05.14 量販店_9，好市多代購）
+snacks.jpg   - James 自有商品照（00245025）
 
-gift.jpg     - Pexels photo 29873592（精緻包裝禮盒）
-shopping.jpg - Pexels photo 5868127（繽紛購物袋）
-costco.jpg   - Pexels photo 11835351（量販倉儲賣場）
-luxury.jpg   - Pexels photo 6650001（皮件特寫，無品牌 logo）
-beauty.jpg   - Pexels photo 5240623（保養品平拍，無品牌 logo）
-snacks.jpg   - GRAND 自有商品照（00245025）
-
-註：刻意避開含品牌 logo／商標的圖片，降低侵權風險。
-日後要換真照片：替換對應檔名即可（建議維持 4:3、寬約 800px）。
+Pexels License：免費商用、可修改、免署名 https://www.pexels.com/license/
+自有照片為 James 親拍之代購商品，版權屬 James。
+日後換照片：替換對應檔名即可（建議 4:3 橫幅、寬約 800px 效果最佳）。
