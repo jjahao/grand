@@ -70,7 +70,29 @@
     document.body.appendChild(fab);
   }
 
-  function run() { injectCSS(); buildHero(); buildFab(); }
+  // 把 Shop2000 的浮動購物車(position:fixed, 內含「結帳」)移到右上角，避免壓住 hero 的 CTA
+  function fixCart() {
+    var nodes = document.querySelectorAll('div,span,a');
+    for (var i = 0; i < nodes.length; i++) {
+      var e = nodes[i];
+      if (getComputedStyle(e).position === 'fixed' && /結帳/.test(e.textContent || '') && e.offsetHeight < 130) {
+        e.style.setProperty('top', '6px', 'important');
+        e.style.setProperty('right', '8px', 'important');
+        e.style.setProperty('z-index', '50', 'important');
+        break;
+      }
+    }
+  }
+
+  // 移除藏 banner 後殘留的空白小 logo 圖（pattern 目錄下的裝飾 gif）
+  function cleanArtifacts() {
+    var imgs = document.querySelectorAll('#main_width img[src*="/pattern/"]');
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].offsetHeight < 50 && imgs[i].offsetWidth < 90) imgs[i].style.display = 'none';
+    }
+  }
+
+  function run() { injectCSS(); buildHero(); buildFab(); fixCart(); cleanArtifacts(); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);
