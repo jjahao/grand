@@ -573,8 +573,14 @@
           var bc = d.getElementById('buyct'); if (!bc) return;
           var opts = [].map.call(bc.options, function (o) { return parseInt(o.value, 10); }).filter(function (v) { return v > 0; });
           if (opts.length === 0) return; // 還沒填
-          var rule = { min: opts[0], step: opts.length > 1 ? (opts[1] - opts[0]) : opts[0], ask: false };
+          var rule = { min: opts[0], step: opts.length > 1 ? (opts[1] - opts[0]) : opts[0], ask: false, brief: '' };
           if (rule.step < 1) rule.step = rule.min;
+          // 抓「簡要說明」(.p_tiem 的第二個；第一個是分類位置)
+          var tiems = d.querySelectorAll('.p_tiem');
+          if (tiems.length >= 2) {
+            var bf = (tiems[1].innerText || '').trim();
+            if (bf && bf.length < 200) rule.brief = bf;
+          }
           finish(rule);
         } catch (e) {}
       }
@@ -609,10 +615,57 @@
         '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy"></div>' +
         '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
         '<div class="gp-dlv">日本直送・原裝到府</div>' +
+        '<div class="gp-brief"></div>' +
         '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><input class="n" type="number" min="1" max="999" value="1" inputmode="numeric" title="可手打或點開選"><button class="inc" type="button">＋</button></div>' +
         '<button class="gp-add" type="button">加入購物車</button></div></div></div>';
     }).join('');
+    // 已快取的卡片立即顯示 brief
+    [].forEach.call(grid.querySelectorAll('.gp-card'), function (c) {
+      var psn = c.getAttribute('data-psn'), r = gpRules[psn];
+      if (r) gpApplyBriefToCard(c, r);
+    });
+    // 沒快取的：lazy 抓(IntersectionObserver+並行限流)
+    gpKickPrefetch();
     gpSyncCount();
+  }
+  function gpApplyBriefToCard(card, rule) {
+    var b = card.querySelector('.gp-brief'); if (!b) return;
+    var txt = '';
+    if (rule.ask) txt = '💬 詢價／預購商品';
+    else if (rule.brief) txt = '📌 ' + rule.brief;
+    else if (rule.step > 1) txt = '📦 ' + rule.step + ' 個一組（最少 ' + rule.min + ' 件）';
+    if (txt) { b.textContent = txt; b.classList.add('on'); }
+  }
+  /* 並行限流抓規則(最多 3 個 iframe 同時)，可視範圍優先 */
+  var gpPrefQ = [], gpPrefRunning = 0;
+  function gpKickPrefetch() {
+    var grid = document.getElementById('gp-grid'); if (!grid) return;
+    // 先排可視範圍內的；其他之後排
+    var cards = [].slice.call(grid.querySelectorAll('.gp-card'));
+    var inView = [], rest = [];
+    var vh = window.innerHeight || 800;
+    cards.forEach(function (c) {
+      var psn = c.getAttribute('data-psn'); if (!psn || gpRules[psn] || gpPending[psn]) return;
+      if (gpPrefQ.indexOf(c) >= 0) return;
+      var top = c.getBoundingClientRect().top;
+      if (top < vh * 1.5 && top > -200) inView.push(c); else rest.push(c);
+    });
+    gpPrefQ = inView.concat(rest, gpPrefQ);
+    gpPumpPrefetch();
+  }
+  function gpPumpPrefetch() {
+    while (gpPrefRunning < 3 && gpPrefQ.length) {
+      var card = gpPrefQ.shift(); if (!card.isConnected) continue;
+      var psn = card.getAttribute('data-psn'); if (!psn || gpRules[psn]) continue;
+      gpPrefRunning++;
+      (function (c, p) {
+        gpFetchRule(p).then(function (rule) {
+          if (c.isConnected) gpApplyBriefToCard(c, rule);
+        }).catch(function () {}).then(function () {
+          gpPrefRunning--; gpPumpPrefetch();
+        });
+      })(card, psn);
+    }
   }
   function buildPrettyList() {
     if (document.getElementById('gp-wrap')) return;
@@ -632,6 +685,8 @@
         '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}',
         '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
         '.gp-dlv{font-size:11px;color:#007600}',
+        '.gp-brief{font-size:11.5px;color:#B12704;background:#FFF6E5;border:1px solid #FFE8B3;border-radius:6px;padding:4px 8px;margin:-2px 0 0;line-height:1.4;display:none}',
+        '.gp-brief.on{display:block}',
         '.gp-row{display:flex;align-items:center;gap:8px;margin-top:auto}',
         '.gp-qty{display:flex;align-items:center;border:1px solid #d5d9d9;border-radius:8px}',
         '.gp-qty button{width:30px;height:34px;border:0;background:#f7f8f8;font-size:17px;font-weight:700;color:#0F1111;cursor:pointer}',
@@ -781,6 +836,8 @@
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
     renderPrettyGrid(items);
     setInterval(gpSyncCount, 1500);
+    // 捲動時補抓進入視窗的卡片
+    var st; window.addEventListener('scroll', function () { clearTimeout(st); st = setTimeout(gpKickPrefetch, 250); }, { passive: true });
     // #plist_tb(真正商品清單)常晚於推薦區載入/換頁也會換 → 觀察整個 #main_width，
     // 一變動就重新隱藏原生清單 + 用 #plist_tb 重建格子。(#gp-wrap 在 #main_width 外，不會觸發迴圈)
     var watch = document.getElementById('main_width') || document.body;
