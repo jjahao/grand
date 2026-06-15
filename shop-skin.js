@@ -36,6 +36,35 @@
     })();
   }
 
+  /* === Top-level 監聽：若頁面上出現 mem_login_pop 的 iframe（彈窗），
+     觀察該 iframe 的內容（同源）是否出現登入成功關鍵字，
+     若出現則把 top 導向 /member/my_order 。這可以處理沒在 iframe 頁面注入 skin 的情況。 === */
+  (function(){
+    function checkIframes(){
+      try{
+        var ifr = document.querySelectorAll('iframe');
+        for(var i=0;i<ifr.length;i++){
+          var f = ifr[i];
+          try{
+            if(!f.src) continue;
+            if(f.src.indexOf('/shop2000_prog/member/mem_login_pop.aspx') === -1) continue;
+            var doc = f.contentDocument || (f.contentWindow && f.contentWindow.document);
+            var txt = doc && doc.body && doc.body.innerText || '';
+            if(/登入成功|歡迎|已登入|登出|會員/.test(txt)){
+              try{ location.href = '/member/my_order'; }catch(e){}
+              return;
+            }
+          }catch(e){}
+        }
+      }catch(e){}
+    }
+    try{
+      var mo = new MutationObserver(checkIframes);
+      mo.observe(document.body || document.documentElement, {childList:true, subtree:true});
+    }catch(e){}
+    setInterval(checkIframes, 1000);
+  })();
+
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
   // 避免「跨站(jjahao→shop2000)註冊/登入後又被導回靜態目錄」造成 405。
   (function () {
