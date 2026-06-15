@@ -16,53 +16,64 @@
   var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
 
-  /* === mem_login_pop.aspx 專用：若在登入彈窗/iframe 偵測到已登入，強制 top 導向我的訂單，
-     用來打斷登入後被導回首頁的死循環。此段只在 mem_login_pop.aspx 執行。 === */
-  if (location.pathname.indexOf('/shop2000_prog/member/mem_login_pop.aspx') === 0) {
-    (function(){
-      function tryRedirectParent(){
-        try{
-          var t = document.body && document.body.innerText || '';
-          if (/登入成功|歡迎|已登入|登出|會員/.test(t)){
-            try{ top.location.href = '/member/my_order'; }catch(e){}
-          }
-        }catch(e){}
+  function openGrandLogin(event){
+    if(event && event.preventDefault){
+      event.preventDefault();
+    }
+    try{
+      if(typeof show_hs === 'function'){
+        show_hs('iframe','/shop2000_prog/member/mem_login_pop.aspx?vdir=','320','400');
+        return false;
       }
-      var obs = new MutationObserver(tryRedirectParent);
-      try{ obs.observe(document.body || document.documentElement, {childList:true, subtree:true}); }catch(e){}
-      setInterval(tryRedirectParent, 1000);
-      // 立即嘗試一次
-      setTimeout(tryRedirectParent, 300);
+    }catch(e){}
+    location.href = LOGIN;
+    return false;
+  }
+
+  function interceptLoginLinks(){
+    try{
+      var anchors = document.querySelectorAll('a[href*="/shop2000_prog/member/mem_login_pop.aspx"]');
+      for(var i=0;i<anchors.length;i++){
+        var a = anchors[i];
+        if(!a.dataset.grandLoginBound){
+          a.dataset.grandLoginBound = '1';
+          a.addEventListener('click', function(e){
+            openGrandLogin(e);
+          }, false);
+        }
+      }
+    }catch(e){}
+  }
+
+  /* === 登入循環修復（2026-06-15）===
+     舊版在 mem_login_pop 與 top-level 都有「偵測頁面出現『會員/登入/歡迎』字樣 →
+     自動跳轉 /member/my_order」的邏輯，再加 setInterval 每秒重跑。
+     但「會員」二字在登入頁與幾乎每個頁面選單都存在，未登入時就狂觸發：
+     跳 /member/my_order → 未登入被踢回登入頁 → 又偵測到「會員」→ 再跳 = 無限循環。
+     已整段移除。登入後去向改由 Shop2000 原生 http_ref 處理，皮膚不再強制跳轉。 */
+  if (location.pathname.indexOf('/shop2000_prog/member/mem_login_pop.aspx') === 0) {
+    (function () {
+      // 只做一件安全的事：若登入後去向(http_ref)是空的，預設回乾淨首頁(已登入態)。
+      // 不做任何關鍵字偵測、不設 interval，避免循環。
+      function setHttpRefIfEmpty() {
+        try {
+          var form = document.forms['form_login_mem'] || document.querySelector('form[name="form_login_mem"]') || document.querySelector('form');
+          if (!form) return;
+          var http = form.elements['http_ref'];
+          if (http && !http.value) http.value = '/';
+          var vdir = form.elements['vdir'];
+          if (vdir && !vdir.value) vdir.value = '';
+        } catch (e) {}
+      }
+      window.addEventListener('load', setHttpRefIfEmpty);
+      try { document.addEventListener('DOMContentLoaded', setHttpRefIfEmpty); } catch (e) {}
     })();
   }
 
-  /* === Top-level 監聽：若頁面上出現 mem_login_pop 的 iframe（彈窗），
-     觀察該 iframe 的內容（同源）是否出現登入成功關鍵字，
-     若出現則把 top 導向 /member/my_order 。這可以處理沒在 iframe 頁面注入 skin 的情況。 === */
-  (function(){
-    function checkIframes(){
-      try{
-        var ifr = document.querySelectorAll('iframe');
-        for(var i=0;i<ifr.length;i++){
-          var f = ifr[i];
-          try{
-            if(!f.src) continue;
-            if(f.src.indexOf('/shop2000_prog/member/mem_login_pop.aspx') === -1) continue;
-            var doc = f.contentDocument || (f.contentWindow && f.contentWindow.document);
-            var txt = doc && doc.body && doc.body.innerText || '';
-            if(/登入成功|歡迎|已登入|登出|會員/.test(txt)){
-              try{ location.href = '/member/my_order'; }catch(e){}
-              return;
-            }
-          }catch(e){}
-        }
-      }catch(e){}
-    }
-    try{
-      var mo = new MutationObserver(checkIframes);
-      mo.observe(document.body || document.documentElement, {childList:true, subtree:true});
-    }catch(e){}
-    setInterval(checkIframes, 1000);
+  // 攔截站內會員登入連結（改用原生彈窗，若可用）。純綁定，不跳轉。
+  (function () {
+    interceptLoginLinks();
+    try { document.addEventListener('DOMContentLoaded', interceptLoginLinks); } catch (e) {}
   })();
 
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
