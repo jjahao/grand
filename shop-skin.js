@@ -17,12 +17,12 @@
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
   // 避免「跨站(jjahao→shop2000)註冊/登入後又被導回靜態目錄」造成 405。
   (function () {
-    var gm = (location.search.match(/[?&]gm=(join|login)/) || [])[1];
+    var gm = (location.search.match(/[?&]gm=(join|login|center)/) || [])[1];
     if (gm) {
       // 先把網址的 ?gm 清掉，否則登入頁的 http_ref(=來源頁) 會帶 ?gm，
       // 登入完跳回 ?gm 又被轉去登入 → 死循環(看似「登入後不動」)。
       try { history.replaceState(null, '', '/'); } catch (e) {}
-      location.replace(gm === 'join' ? MEMBER : LOGIN);
+      location.replace(gm === 'login' ? LOGIN : MEMBER);
     }
   })();
   var QR_LINE = 'https://img2.shop2000.com.tw/75210/self/j20251111100158_o.jpg';
@@ -87,6 +87,7 @@
       '.ghm{flex:1;text-align:center;padding:11px 8px;border-radius:24px;font-size:14px;font-weight:800;text-decoration:none}',
       '.ghm-join{background:#fff;color:var(--wine)!important}',
       '.ghm-login{background:transparent;color:#fff!important;border:1.5px solid rgba(255,255,255,.55)}',
+      '.gh-center{display:block;max-width:340px;margin:9px auto 0;text-align:center;padding:10px;border-radius:24px;font-size:13px;font-weight:800;text-decoration:none;background:rgba(205,163,73,.18);color:var(--gold)!important;border:1px solid rgba(205,163,73,.5)}',
       '.gl-cta{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:34px;padding:16px 24px;font-size:16px;font-weight:900;text-decoration:none;line-height:1;border:0;cursor:pointer;width:100%;max-width:340px;margin:0 auto}',
       '.gl-buy{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;box-shadow:0 8px 22px rgba(255,91,46,.42)}',
       '.gl-buy:active{transform:scale(.98)}',
@@ -182,6 +183,7 @@
         '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
         '<a class="ghm ghm-login" href="' + LOGIN + '">👤 會員登入</a>' +
       '</div>' +
+      '<a class="gh-center" href="' + MEMBER + '">📋 會員中心・我的訂單 / 點數 / 帳務</a>' +
     '</section>' +
 
     '<section id="gl-show">' +

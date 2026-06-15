@@ -124,6 +124,14 @@ body {
   border-radius: 24px; padding: 12px 24px;
   text-decoration: none; box-shadow: 0 6px 16px rgba(6,199,85,.32);
 }
+.hero-member-btn {
+  display: block; max-width: 320px; margin: 12px auto 0;
+  text-align: center; padding: 11px 16px;
+  background: rgba(205,163,73,.18); color: var(--gold);
+  border: 1px solid rgba(205,163,73,.55);
+  font-size: 13px; font-weight: 800;
+  border-radius: 24px; text-decoration: none;
+}
 
 /* ── GRID ── */
 main { padding: 18px 12px 0; }
