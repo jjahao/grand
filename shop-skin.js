@@ -11,6 +11,7 @@
 
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
+  var MEMBER = 'https://grand.shop2000.com.tw/member';
   var QR_LINE = 'https://img2.shop2000.com.tw/75210/self/j20251111100158_o.jpg';
   var QR_WECHAT = 'https://img2.shop2000.com.tw/75210/self/j20230428133953_o.jpg';
 
@@ -69,6 +70,10 @@
       '#gl-hero .eye{font-size:12px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:0 0 10px}',
       '#gl-hero h1{font-size:33px;font-weight:900;letter-spacing:-1px;margin:0 0 8px}',
       '#gl-hero .sub{font-size:14px;color:#EDE0D2;margin:0 0 22px;line-height:1.6}',
+      '.gh-member{display:flex;gap:9px;justify-content:center;margin:14px auto 0;max-width:340px}',
+      '.ghm{flex:1;text-align:center;padding:11px 8px;border-radius:24px;font-size:14px;font-weight:800;text-decoration:none}',
+      '.ghm-join{background:#fff;color:var(--wine)!important}',
+      '.ghm-login{background:transparent;color:#fff!important;border:1.5px solid rgba(255,255,255,.55)}',
       '.gl-cta{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:34px;padding:16px 24px;font-size:16px;font-weight:900;text-decoration:none;line-height:1;border:0;cursor:pointer;width:100%;max-width:340px;margin:0 auto}',
       '.gl-buy{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;box-shadow:0 8px 22px rgba(255,91,46,.42)}',
       '.gl-buy:active{transform:scale(.98)}',
@@ -159,6 +164,10 @@
       '<div class="gl-btns">' +
         '<a class="gl-cta gl-buy" href="' + STORE + '">🛒 立即逛商品（2300+ 件）</a>' +
         '<a class="gl-cta gl-ghost" href="' + LINE + '" target="_blank" rel="noopener">加 LINE 看新貨</a>' +
+      '</div>' +
+      '<div class="gh-member">' +
+        '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
+        '<a class="ghm ghm-login" href="' + MEMBER + '">👤 會員登入</a>' +
       '</div>' +
     '</section>' +
 
