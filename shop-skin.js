@@ -7,13 +7,34 @@
    ============================================================ */
 (function () {
   'use strict';
-  if (location.pathname.indexOf('/shop2000_prog') === 0) return; // 後台不套
+  // 後台大多不套用皮膚，但允許 mem_login_pop.aspx 執行（用來處理登入後的 top-level 導向）
+  if (location.pathname.indexOf('/shop2000_prog') === 0 && location.pathname.indexOf('/shop2000_prog/member/mem_login_pop.aspx') !== 0) return; // 後台不套
 
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
   var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
+
+  /* === mem_login_pop.aspx 專用：若在登入彈窗/iframe 偵測到已登入，強制 top 導向我的訂單，
+     用來打斷登入後被導回首頁的死循環。此段只在 mem_login_pop.aspx 執行。 === */
+  if (location.pathname.indexOf('/shop2000_prog/member/mem_login_pop.aspx') === 0) {
+    (function(){
+      function tryRedirectParent(){
+        try{
+          var t = document.body && document.body.innerText || '';
+          if (/登入成功|歡迎|已登入|登出|會員/.test(t)){
+            try{ top.location.href = '/member/my_order'; }catch(e){}
+          }
+        }catch(e){}
+      }
+      var obs = new MutationObserver(tryRedirectParent);
+      try{ obs.observe(document.body || document.documentElement, {childList:true, subtree:true}); }catch(e){}
+      setInterval(tryRedirectParent, 1000);
+      // 立即嘗試一次
+      setTimeout(tryRedirectParent, 300);
+    })();
+  }
 
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
   // 避免「跨站(jjahao→shop2000)註冊/登入後又被導回靜態目錄」造成 405。
