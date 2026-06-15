@@ -11,7 +11,8 @@
 
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
-  var MEMBER = 'https://grand.shop2000.com.tw/member'; // 註冊/加入會員頁
+  var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
+  var ORDER = 'https://grand.shop2000.com.tw/member/my_order.aspx'; // 訂單歷史
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
 
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
@@ -147,7 +148,12 @@
       /* 底部常駐購買 bar */
       '#grand-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;font-size:16px;font-weight:900;text-decoration:none;padding:15px 34px;border-radius:32px;box-shadow:0 8px 24px rgba(255,91,46,.5);display:flex;align-items:center;gap:9px;white-space:nowrap}',
       '#grand-fab:active{transform:translateX(-50%) scale(.97)}',
-      /* 隱密管理入口 + 登入彈窗 */
+      '#grand-member-panel{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:9001;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.96);border:1px solid rgba(205,163,73,.35);box-shadow:0 18px 38px rgba(66,35,20,.12);max-width:calc(100% - 24px);min-height:52px}@media(max-width:520px){#grand-member-panel{bottom:86px;padding:8px;gap:8px}}',
+      '#grand-member-panel a{display:inline-flex;align-items:center;justify-content:center;min-width:120px;padding:12px 16px;border-radius:999px;text-decoration:none;font-weight:800;font-size:13px;line-height:1.2;color:var(--ink);background:#fff;border:1px solid rgba(189,152,104,.35)}',
+      '#grand-member-panel a.gm-primary{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;border-color:transparent;box-shadow:0 10px 22px rgba(255,91,46,.28)}',
+      '#grand-member-panel a.gm-secondary{background:rgba(255,255,255,.96);color:var(--ink)!important}',
+      '#grand-member-panel a.gm-secondary:hover{background:rgba(255,242,231,.95)}',
+      '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
       '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
       '#grand-admin:hover{opacity:1;color:#888}',
       '#grand-login-wrap{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}',
@@ -183,7 +189,11 @@
         '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
         '<a class="ghm ghm-login" href="' + LOGIN + '">👤 會員登入</a>' +
       '</div>' +
-      '<a class="gh-center" href="' + MEMBER + '">📋 會員中心・我的訂單 / 點數 / 帳務</a>' +
+      '<div class="gl-cta gl-btns" style="margin-top:10px;gap:10px;justify-content:center;">' +
+        '<a class="gl-ghost" href="' + ORDER + '">📋 會員中心</a>' +
+        '<a class="gl-buy" href="' + ORDER + '">🧾 我的訂單</a>' +
+      '</div>' +
+      '<a class="gh-center" href="' + ORDER + '">📋 會員中心・我的訂單 / 點數 / 帳務</a>' +
     '</section>' +
 
     '<section id="gl-show">' +
@@ -195,6 +205,7 @@
         '<div class="gbtns">' +
           '<a class="gl-mini o" href="/member">加入會員</a>' +
           '<a class="gl-mini j" href="' + STORE + '">先逛逛看</a>' +
+          '<a class="gl-mini j" href="' + ORDER + '">我的訂單</a>' +
         '</div>' +
       '</div>' +
     '</section>' +
@@ -256,6 +267,17 @@
     fab.href = STORE;
     fab.innerHTML = '🛒 立即逛商品';
     document.body.appendChild(fab);
+  }
+
+  function buildMemberPanel() {
+    if (document.getElementById('grand-member-panel')) return;
+    var panel = document.createElement('div');
+    panel.id = 'grand-member-panel';
+    panel.innerHTML =
+      '<a class="gm-primary" href="' + STORE + '">🛒 逛商品目錄</a>' +
+      '<a class="gm-secondary" href="' + ORDER + '">👤 會員中心</a>' +
+      '<a class="gm-secondary" href="' + ORDER + '">🧾 我的訂單</a>';
+    document.body.appendChild(panel);
   }
 
   function openAdmin() {
@@ -325,6 +347,7 @@
     injectCSS();
     if (isHome()) buildLanding();
     buildFab();
+    buildMemberPanel();
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
