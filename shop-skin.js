@@ -551,23 +551,42 @@
     if (!bc) { bc = document.createElement('input'); bc.type = 'hidden'; bc.id = 'buyct'; document.body.appendChild(bc); }
     bc.value = v; return bc;
   }
-  /* 商品規則(從單品頁 #buyct 抓):min=最少件數/單位,step=倍數,ask=詢價(不可購) */
-  var gpRules = {};
+  /* 商品規則(用隱藏iframe載單品頁、等JS填好#buyct才讀):min=最少件數,step=倍數,ask=詢價 */
+  var gpRules = {}, gpPending = {};
   function gpFetchRule(psn) {
     if (gpRules[psn]) return Promise.resolve(gpRules[psn]);
-    return fetch('/product/p' + psn, { credentials: 'include' }).then(function (r) { return r.text(); }).then(function (html) {
-      // 取 #buyct 的 option value 序列
-      var m = html.match(/id=["']?buyct["']?[^>]*>([\s\S]*?)<\/select>/i);
-      var rule = { min: 1, step: 1, ask: false };
-      if (!m) { rule.ask = true; }
-      else {
-        var opts = []; var re = /<option[^>]*value=["']?([0-9]+)["']?/gi, mm;
-        while ((mm = re.exec(m[1])) !== null) opts.push(+mm[1]);
-        if (!opts.length) rule.ask = true;
-        else { rule.min = opts[0]; rule.step = opts.length > 1 ? (opts[1] - opts[0]) : opts[0]; if (rule.step < 1) rule.step = rule.min; }
+    if (gpPending[psn]) return gpPending[psn];
+    gpPending[psn] = new Promise(function (resolve) {
+      var ifr = document.createElement('iframe');
+      ifr.style.cssText = 'position:absolute;left:-9999px;width:600px;height:400px;border:0';
+      ifr.src = '/product/p' + psn;
+      var done = false, t;
+      function finish(rule) {
+        if (done) return; done = true; clearTimeout(t);
+        gpRules[psn] = rule; delete gpPending[psn];
+        try { ifr.parentNode.removeChild(ifr); } catch (e) {}
+        resolve(rule);
       }
-      gpRules[psn] = rule; return rule;
-    }).catch(function () { var r = { min: 1, step: 1, ask: false }; gpRules[psn] = r; return r; });
+      function read() {
+        try {
+          var d = ifr.contentDocument; if (!d) return;
+          var bc = d.getElementById('buyct'); if (!bc) return;
+          var opts = [].map.call(bc.options, function (o) { return parseInt(o.value, 10); }).filter(function (v) { return v > 0; });
+          if (opts.length === 0) return; // 還沒填
+          var rule = { min: opts[0], step: opts.length > 1 ? (opts[1] - opts[0]) : opts[0], ask: false };
+          if (rule.step < 1) rule.step = rule.min;
+          finish(rule);
+        } catch (e) {}
+      }
+      ifr.onload = function () {
+        // JS 會非同步填 #buyct，輪詢最多 6 秒
+        var tries = 0;
+        var iv = setInterval(function () { read(); if (done) clearInterval(iv); else if (tries++ > 30) { clearInterval(iv); finish({ min: 1, step: 1, ask: true }); } }, 200);
+      };
+      t = setTimeout(function () { finish({ min: 1, step: 1, ask: true }); }, 10000); // 整體 10 秒兜底
+      document.body.appendChild(ifr);
+    });
+    return gpPending[psn];
   }
   function gpRoundQty(q, rule) {
     if (rule.ask) return 0;
