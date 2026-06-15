@@ -551,6 +551,32 @@
     if (!bc) { bc = document.createElement('input'); bc.type = 'hidden'; bc.id = 'buyct'; document.body.appendChild(bc); }
     bc.value = v; return bc;
   }
+  /* 商品規則(從單品頁 #buyct 抓):min=最少件數/單位,step=倍數,ask=詢價(不可購) */
+  var gpRules = {};
+  function gpFetchRule(psn) {
+    if (gpRules[psn]) return Promise.resolve(gpRules[psn]);
+    return fetch('/product/p' + psn, { credentials: 'include' }).then(function (r) { return r.text(); }).then(function (html) {
+      // 取 #buyct 的 option value 序列
+      var m = html.match(/id=["']?buyct["']?[^>]*>([\s\S]*?)<\/select>/i);
+      var rule = { min: 1, step: 1, ask: false };
+      if (!m) { rule.ask = true; }
+      else {
+        var opts = []; var re = /<option[^>]*value=["']?([0-9]+)["']?/gi, mm;
+        while ((mm = re.exec(m[1])) !== null) opts.push(+mm[1]);
+        if (!opts.length) rule.ask = true;
+        else { rule.min = opts[0]; rule.step = opts.length > 1 ? (opts[1] - opts[0]) : opts[0]; if (rule.step < 1) rule.step = rule.min; }
+      }
+      gpRules[psn] = rule; return rule;
+    }).catch(function () { var r = { min: 1, step: 1, ask: false }; gpRules[psn] = r; return r; });
+  }
+  function gpRoundQty(q, rule) {
+    if (rule.ask) return 0;
+    q = parseInt(q, 10); if (isNaN(q) || q < rule.min) q = rule.min;
+    var off = (q - rule.min) % rule.step;
+    if (off !== 0) q = q - off + rule.step; // 向上進位到合法
+    if (q < rule.min) q = rule.min;
+    return q;
+  }
   function gpSyncCount() {
     var g = document.querySelector('#buyGs'), c = document.getElementById('gp-cnt');
     if (c) c.textContent = g ? (g.innerText.trim() || '0') : '0';
@@ -650,17 +676,27 @@
     wheel.querySelector('.x').addEventListener('click', wheelClose);
     function wheelOpen(input) {
       wheelTarget = input;
+      var card = input.closest('.gp-card'); var psn = card ? card.getAttribute('data-psn') : '';
       var strip = document.getElementById('gp-wheel-strip');
-      var cur = Math.max(1, Math.min(500, +input.value || 1));
-      var html = '';
-      for (var n = 1; n <= 500; n++) html += '<div class="w' + (n === cur ? ' cur' : '') + '" data-v="' + n + '">' + n + '</div>';
-      strip.innerHTML = html;
+      function render(rule) {
+        var min = rule ? rule.min : 1, step = rule ? rule.step : 1, ask = rule ? rule.ask : false;
+        if (ask) { strip.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:#565959;">此商品為詢價／預購商品<br>請按右上 ✕ 關閉，使用「💬 詢價」聯絡小編</div>'; return; }
+        var cur = Math.max(min, +input.value || min);
+        var html = ''; var count = 0;
+        for (var v = min; v <= 999 && count < 500; v += step, count++) {
+          html += '<div class="w' + (v === cur ? ' cur' : '') + '" data-v="' + v + '">' + v + '</div>';
+        }
+        strip.innerHTML = html;
+        var hint = document.getElementById('gp-wheel-hint');
+        if (hint) hint.textContent = step > 1 ? ('此商品 ' + step + ' 個一組 ・ 橫滑選數量') : '橫向滑動 → 點數字選取';
+        setTimeout(function () {
+          var c = strip.querySelector('.w.cur');
+          if (c) strip.scrollLeft = c.offsetLeft - (strip.clientWidth / 2) + (c.offsetWidth / 2);
+        }, 30);
+      }
+      strip.innerHTML = '<div style="padding:18px;color:#888;font-size:13px;">載入中…</div>';
       wheelBd.classList.add('on'); wheel.classList.add('on');
-      // 滾到目前值
-      setTimeout(function () {
-        var c = strip.querySelector('.w.cur');
-        if (c) strip.scrollLeft = c.offsetLeft - (strip.clientWidth / 2) + (c.offsetWidth / 2);
-      }, 30);
+      if (psn) gpFetchRule(psn).then(render); else render(null);
     }
     document.getElementById('gp-wheel-strip').addEventListener('click', function (e) {
       var w = e.target.closest('.w'); if (!w || !wheelTarget) return;
@@ -676,17 +712,44 @@
       if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
       var card = e.target.closest('.gp-card'); if (!card) return;
       var n = card.querySelector('.n');
-      if (e.target.classList.contains('inc')) { n.value = clampQty((+n.value || 1) + 1); return; }
-      if (e.target.classList.contains('dec')) { n.value = clampQty((+n.value || 1) - 1); return; }
+      if (e.target.classList.contains('inc') || e.target.classList.contains('dec')) {
+        var psn1 = card.getAttribute('data-psn'), dir = e.target.classList.contains('inc') ? 1 : -1;
+        gpFetchRule(psn1).then(function (rule) {
+          if (rule.ask) return;
+          var step = rule.step || 1, min = rule.min || 1;
+          var cur = +n.value || min;
+          var next = cur + dir * step;
+          if (next < min) next = min;
+          n.value = clampQty(next);
+        });
+        return;
+      }
       if (e.target === n) { wheelOpen(n); return; } // 點數字 → 開輪
       if (e.target.classList.contains('gp-add')) {
-        var qty = clampQty(n.value || 1); n.value = qty;
+        var btn = e.target; if (btn.disabled) return;
         var psn = card.getAttribute('data-psn');
-        ensureBuyct(qty);
-        try { if (typeof mycar_bk === 'function') { mycar_bk(psn); if (typeof clear_buyTxt === 'function') setTimeout(clear_buyTxt, 900); } } catch (er) {}
-        var btn = e.target; btn.classList.add('added'); btn.textContent = '✓ 已加入 ' + qty + ' 件';
-        setTimeout(function () { btn.classList.remove('added'); btn.textContent = '加入購物車'; }, 1800);
-        setTimeout(gpSyncCount, 1200);
+        var ask = clampQty(n.value || 1);
+        btn.disabled = true; var origTxt = btn.textContent; btn.textContent = '檢查中…';
+        gpFetchRule(psn).then(function (rule) {
+          if (rule.ask) {
+            btn.disabled = false; btn.textContent = '💬 詢價';
+            window.open('https://line.me/ti/p/~@562spzag', '_blank', 'noopener');
+            setTimeout(function () { btn.textContent = origTxt; }, 1800);
+            return;
+          }
+          var qty = gpRoundQty(ask, rule);
+          if (qty !== ask) {
+            if (!confirm('此商品必須 ' + rule.step + ' 個為單位（最少 ' + rule.min + ' 件）。\n您選 ' + ask + ' 件 → 自動調整為 ' + qty + ' 件。\n要繼續加入購物車嗎？')) {
+              btn.disabled = false; btn.textContent = origTxt; return;
+            }
+            n.value = qty;
+          }
+          ensureBuyct(qty);
+          try { if (typeof mycar_bk === 'function') { mycar_bk(psn); if (typeof clear_buyTxt === 'function') setTimeout(clear_buyTxt, 900); } } catch (er) {}
+          btn.classList.add('added'); btn.textContent = '✓ 已加入 ' + qty + ' 件';
+          setTimeout(function () { btn.disabled = false; btn.classList.remove('added'); btn.textContent = origTxt; }, 1800);
+          setTimeout(gpSyncCount, 1200);
+        });
       }
     });
     // 手打數字後立刻規格化(失焦/按Enter)
