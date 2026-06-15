@@ -33,8 +33,8 @@
       '.gh-cta{display:inline-flex;align-items:center;gap:7px;border-radius:30px;padding:13px 26px;font-size:15px;font-weight:800;text-decoration:none;line-height:1}',
       '.gh-cta-main{background:#06C755;color:#fff!important}',
       '.gh-cta-line{background:#fff;color:#111!important}',
-      /* 區塊標題（老闆的話/熱門商品）統一 */
-      '#main_width img[src*="/pattern/"]{max-width:100%;height:auto}',
+      /* 藏掉舊主題的導覽/裝飾 gif（首頁/加入會員等老式圖片鈕），商品圖不受影響 */
+      '#main_width img[src*="/pattern/207097/"]{display:none!important}',
       /* 常駐浮動鈕：手機桌機都看得到 */
       '#grand-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;background:#06C755;color:#fff!important;font-size:15px;font-weight:800;text-decoration:none;padding:14px 30px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:8px}',
       '#grand-fab:active{transform:translateX(-50%) scale(.97)}'
