@@ -219,7 +219,47 @@
       '#grand-admin:hover{opacity:1;color:#888}',
       '#grand-login-wrap{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}',
       '#grand-login-wrap.hide{display:none!important}',
-      '#grand-login-wrap #div_login{display:block!important;position:relative;z-index:9999;margin:0!important}'
+      '#grand-login-wrap #div_login{display:block!important;position:relative;z-index:9999;margin:0!important}',
+      /* ===== 新首頁：乾淨專業大公司風（與商品頁同套） ===== */
+      '#grand-landing{background:#fff!important}',
+      '.gh-top{background:#232F3E;color:#fff;text-align:center;font-size:12px;padding:7px 12px;letter-spacing:.5px}',
+      '#gh-hero{background:linear-gradient(180deg,#fff,#F7F4EF);padding:34px 18px 30px;text-align:center;border-bottom:1px solid #eee}',
+      '#gh-hero .brand{font-size:13px;letter-spacing:4px;color:#B8860B;font-weight:800;margin:0}',
+      '#gh-hero h1{font-size:30px;font-weight:900;margin:8px 0 6px;letter-spacing:-.5px;color:#0F1111}',
+      '#gh-hero .sub{font-size:14px;color:#565959;line-height:1.7;margin:0 0 20px}',
+      '.gh-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}',
+      '.gh-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 34px;border-radius:25px;font-size:16px;font-weight:800;text-decoration:none;border:0;cursor:pointer;white-space:nowrap}',
+      '.gh-cta.buy{background:#FFD814;color:#0F1111!important;box-shadow:0 6px 18px rgba(255,153,0,.35)}',
+      '.gh-cta.buy:active{transform:scale(.98)}',
+      '.gh-cta.line{background:#06C755;color:#fff!important}',
+      '.gh-mbar{display:flex;gap:8px;justify-content:center;margin:16px auto 0;max-width:430px}',
+      '.gh-mbar a{flex:1;text-align:center;padding:10px 6px;border:1px solid #d5d9d9;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;color:#0F1111!important;background:#fff}',
+      '.gh-mbar a.j{background:#0F1111;color:#fff!important;border-color:#0F1111}',
+      '.gh-sec{padding:30px 18px;max-width:1180px;margin:0 auto}',
+      '.gh-h2{font-size:20px;font-weight:900;text-align:center;margin:0 0 4px;color:#0F1111}',
+      '.gh-h2 .en{display:block;font-size:11px;letter-spacing:3px;color:#B8860B;font-weight:800;margin-bottom:6px}',
+      '.gh-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:760px;margin:18px auto 0}',
+      '@media(min-width:620px){.gh-cats{grid-template-columns:repeat(6,1fr)}}',
+      '.gh-cat{display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 8px;border:1px solid #e3e6e6;border-radius:12px;text-decoration:none;color:#0F1111!important;background:#fff}',
+      '.gh-cat:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}',
+      '.gh-cat .ic{font-size:28px;line-height:1}.gh-cat .nm{font-size:12.5px;font-weight:700}',
+      '.gh-trust{background:#F7F8F8;border-top:1px solid #eee;border-bottom:1px solid #eee;max-width:none}',
+      '.gh-tg{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:680px;margin:0 auto}',
+      '@media(min-width:620px){.gh-tg{grid-template-columns:repeat(4,1fr)}}',
+      '.gh-ti{text-align:center}.gh-ti .ic{font-size:26px}.gh-ti .t{font-size:14px;font-weight:800;margin:6px 0 3px;color:#0F1111}.gh-ti .d{font-size:11.5px;color:#565959;line-height:1.5}',
+      '.gh-band{background:#232F3E;color:#fff;text-align:center;padding:34px 18px}',
+      '.gh-band .t{font-size:21px;font-weight:900;margin:0 0 16px;line-height:1.4}',
+      '.gh-band .gh-cta.buy{box-shadow:0 6px 18px rgba(0,0,0,.3)}',
+      '.gh-line{background:linear-gradient(180deg,#F1FBF5,#E6F7EC);max-width:none;text-align:center}',
+      '.gh-linedesc{font-size:13px;color:#565959;margin:0 0 6px}',
+      '.gh-qrs{display:flex;gap:18px;justify-content:center;margin:18px 0 0;flex-wrap:wrap}',
+      '.gh-qr{background:#fff;border-radius:12px;padding:10px;width:146px;box-shadow:0 3px 12px rgba(6,150,70,.12)}',
+      '.gh-qr img{width:126px;height:126px;object-fit:contain;display:block;border-radius:6px}',
+      '.gh-qr .lb{font-size:12px;font-weight:700;margin-top:7px;color:#0F1111}.gh-qr .lb b{color:#06C755}',
+      '#gh-foot{text-align:center;color:#565959;font-size:12.5px;line-height:1.9;padding:26px 18px;border-top:1px solid #eee}',
+      '#gh-foot b{color:#0F1111}',
+      '#gh-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111!important;font-weight:800;font-size:16px;padding:14px 34px;border-radius:28px;box-shadow:0 8px 24px rgba(255,153,0,.45);text-decoration:none;white-space:nowrap}',
+      '#gh-fab:active{transform:translateX(-50%) scale(.97)}'
     ].join('');
     (document.head || document.documentElement).appendChild(css);
   }
@@ -237,72 +277,60 @@
   }
 
   function landingHTML() {
+    var SHOP = '/product'; // 官網本站商品頁(已美化、可直接選購下單)
+    var cats = [['🛒', '好市多'], ['💊', '日本藥妝'], ['🍫', '零食爆品'], ['🎁', '百貨禮盒'], ['🏪', '便利商店'], ['📦', 'MDM 批發']];
+    var catHTML = cats.map(function (c) {
+      return '<a class="gh-cat" href="' + SHOP + '"><span class="ic">' + c[0] + '</span><span class="nm">' + c[1] + '</span></a>';
+    }).join('');
     return '' +
-    '<section id="gl-hero">' +
-      '<p class="eye">日本直送 ・ 正品保證</p>' +
+    '<div class="gh-top">日本直送・正品保證　|　已含代購服務　|　LINE 專人即時客服</div>' +
+    '<section id="gh-hero">' +
+      '<p class="brand">GRAND ・ JAPAN BUYING</p>' +
       '<h1>GRAND 天倉</h1>' +
-      '<p class="sub">日本各大百貨・批店精選<br>每日上新 ・ 原裝直送台灣到府</p>' +
-      '<div class="gl-btns">' +
-        '<a class="gl-cta gl-buy" href="' + STORE + '">🛒 立即逛商品（2300+ 件）</a>' +
-        '<a class="gl-cta gl-ghost" href="' + LINE + '" target="_blank" rel="noopener">加 LINE 看新貨</a>' +
+      '<p class="sub">日本各大百貨・量販・批店精選<br>原裝直送台灣到府　每日上新</p>' +
+      '<div class="gh-ctas">' +
+        '<a class="gh-cta buy" href="' + SHOP + '">🛒 立即選購</a>' +
+        '<a class="gh-cta line" href="' + LINE + '" target="_blank" rel="noopener">加 LINE 看新貨</a>' +
       '</div>' +
-      '<div class="gh-member">' +
-        '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
-        '<a class="ghm ghm-login" href="' + LOGIN + '">👤 會員登入</a>' +
-      '</div>' +
-      '<a class="gh-center" href="' + MEMBER + '">📋 會員中心｜訂單・點數・帳務</a>' +
-    '</section>' +
-
-    '<section id="gl-show">' +
-      '<h2 class="gl-h2"><small>SHOP BY CATEGORY</small>精選代購分類</h2>' +
-      '<div class="gl-grid">' + tilesHTML() + '</div>' +
-      '<div id="gl-gate">' +
-        '<p class="gt">🔓 加入會員，解鎖完整商品與會員批價</p>' +
-        '<p class="gd">會員可看全部到貨照片、即時新品與專屬報價</p>' +
-        '<div class="gbtns">' +
-          '<a class="gl-mini o" href="' + MEMBER + '">加入會員</a>' +
-          '<a class="gl-mini j" href="' + STORE + '">先逛逛看</a>' +
-        '</div>' +
+      '<div class="gh-mbar">' +
+        '<a class="j" href="' + MEMBER + '">✨ 加入會員</a>' +
+        '<a href="' + LOGIN + '">👤 會員登入</a>' +
+        '<a href="' + ORDER + '">📋 會員中心</a>' +
       '</div>' +
     '</section>' +
 
-    '<section id="gl-trust" class="gl-sec">' +
-      '<div class="gl-badges">' +
-        '<div class="gl-badge"><span class="ic">🏬</span>實體天倉・天天收發</div>' +
-        '<div class="gl-badge"><span class="ic">🗾</span>日本正品・百貨直送</div>' +
-        '<div class="gl-badge"><span class="ic">💴</span>MDM 進價・透明公開</div>' +
-        '<div class="gl-badge"><span class="ic">💬</span>LINE 專人・快速回覆</div>' +
+    '<section class="gh-sec">' +
+      '<h2 class="gh-h2"><span class="en">SHOP BY CATEGORY</span>熱門分類</h2>' +
+      '<div class="gh-cats">' + catHTML + '</div>' +
+    '</section>' +
+
+    '<section class="gh-sec gh-trust">' +
+      '<div class="gh-tg">' +
+        '<div class="gh-ti"><div class="ic">🗾</div><div class="t">日本直送</div><div class="d">百貨量販原裝<br>直送台灣到府</div></div>' +
+        '<div class="gh-ti"><div class="ic">✅</div><div class="t">正品保證</div><div class="d">實體天倉<br>天天收發貨</div></div>' +
+        '<div class="gh-ti"><div class="ic">🤝</div><div class="t">代提代付</div><div class="d">免費代提代付<br>您只要挑</div></div>' +
+        '<div class="gh-ti"><div class="ic">💬</div><div class="t">專人客服</div><div class="d">LINE 即時回覆<br>下單詢問都方便</div></div>' +
       '</div>' +
     '</section>' +
 
-    '<section class="gl-sec">' +
-      '<h2 class="gl-h2"><small>WHY GRAND</small>為什麼選 GRAND</h2>' +
-      '<div class="gl-cards">' +
-        '<div class="gl-card"><span class="ic">🆕</span><div><p class="tt">每日上新</p><p class="ds">統整日本最夯商品，第一手看到貨、不錯過。</p></div></div>' +
-        '<div class="gl-card"><span class="ic">🤝</span><div><p class="tt">代提代付</p><p class="ds">免費代提貨、代付款，您只要挑、其餘交給我們。</p></div></div>' +
-        '<div class="gl-card"><span class="ic">📦</span><div><p class="tt">直送到府</p><p class="ds">日本天倉直送台灣，送到您指定的地址。</p></div></div>' +
+    '<section class="gh-band">' +
+      '<p class="t">日本精選・每日上新<br>手刀選購不錯過 🛒</p>' +
+      '<a class="gh-cta buy" href="' + SHOP + '">立即選購 →</a>' +
+    '</section>' +
+
+    '<section class="gh-sec gh-line">' +
+      '<h2 class="gh-h2"><span class="en">STAY CONNECTED</span>加 LINE・第一手看新品</h2>' +
+      '<p class="gh-linedesc">新品到貨第一時間通知，也能直接在 LINE 下單詢問</p>' +
+      '<div class="gh-qrs">' +
+        '<div class="gh-qr"><img src="' + QR_LINE + '" alt="LINE QR"><div class="lb"><b>LINE</b><br>@562spzag</div></div>' +
+        '<div class="gh-qr"><img src="' + QR_WECHAT + '" alt="WeChat QR"><div class="lb">微信<br>james3338</div></div>' +
       '</div>' +
     '</section>' +
 
-    '<section id="gl-band">' +
-      '<p class="bt">日本精選・手刀下單<br>挑到停不下來 🤤</p>' +
-      '<a class="gl-cta" href="' + STORE + '">🛒 現在就逛 →</a>' +
-    '</section>' +
-
-    '<section id="gl-line" class="gl-sec">' +
-      '<h2 class="gl-h2"><small>STAY CONNECTED</small>加 LINE・第一手看新品</h2>' +
-      '<p class="desc">新品到貨第一時間通知，也能直接在 LINE 下單詢問。</p>' +
-      '<div class="gl-btns"><a class="gl-cta gl-lineb" href="' + LINE + '" target="_blank" rel="noopener">➕ 加入 LINE 好友</a></div>' +
-      '<div class="gl-qrs">' +
-        '<div class="gl-qr"><img src="' + QR_LINE + '" alt="LINE QR"><div class="lb"><b>LINE</b><br>@562spzag</div></div>' +
-        '<div class="gl-qr"><img src="' + QR_WECHAT + '" alt="WeChat QR"><div class="lb">微信<br>james3338</div></div>' +
-      '</div>' +
-    '</section>' +
-
-    '<section id="gl-info" class="gl-sec">' +
-      '<div class="row"><b>營業時間</b>　週一～週五 09:00–18:00（六日及例假休）</div>' +
-      '<div class="row">回訊息時間　每天 12:00–22:00</div>' +
-      '<div class="row"><b>日本天倉</b>　東京都千代田区岩本町 2-1-8 NAビル1階</div>' +
+    '<section id="gh-foot">' +
+      '<div><b>營業時間</b>　週一～週五 09:00–18:00（六日及例假休）</div>' +
+      '<div>回訊息時間　每天 12:00–22:00</div>' +
+      '<div><b>日本天倉</b>　東京都千代田区岩本町 2-1-8 NAビル1階</div>' +
     '</section>';
   }
 
@@ -314,6 +342,12 @@
     wrap.id = 'grand-landing';
     wrap.innerHTML = landingHTML();
     mw.parentNode.insertBefore(wrap, mw);
+    // 常駐選購鈕
+    if (!document.getElementById('gh-fab')) {
+      var fab = document.createElement('a');
+      fab.id = 'gh-fab'; fab.href = '/product'; fab.textContent = '🛒 立即選購';
+      document.body.appendChild(fab);
+    }
   }
 
   function buildFab() {
