@@ -1,0 +1,76 @@
+/* GRAND Shop2000 前台皮膚 — 由 google_ana.aspx 注入一行 <script src> 載入。
+   日後改版面只需編輯本檔 + git push，1~2 分鐘自動生效，無須再進 Shop2000。
+   原則：不碰 #div_login（保留管理員登入小點），只美化前台。 */
+(function () {
+  'use strict';
+  // 後台頁面不套用
+  if (location.pathname.indexOf('/shop2000_prog') === 0) return;
+
+  var STORE = 'https://jjahao.github.io/grand/';
+  var LINE = 'https://line.me/ti/p/~@562spzag';
+
+  function injectCSS() {
+    if (document.getElementById('grand-skin-css')) return;
+    var css = document.createElement('style');
+    css.id = 'grand-skin-css';
+    css.textContent = [
+      /* 全站字體 + 配色基底 */
+      'body,td,th,select,input,textarea,button,a{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif!important}',
+      'body{background:#f6f6f6!important;color:#111!important}',
+      /* 版心置中 + 收掉左側工具列；不動 #div_login（保留登入） */
+      '#main_width{max-width:1000px!important;margin:0 auto!important;background:#fff!important}',
+      '.left_td{display:none!important}',
+      '.right_td{width:100%!important;padding:0!important}',
+      /* 藏掉雜亂的大 banner 圖與舊圖片導覽列 */
+      'img[src*="/banner.jpg"],img[src*="/banner.gif"]{display:none!important}',
+      /* GRAND 自訂 hero */
+      '#grand-hero{background:#111;color:#fff;text-align:center;padding:34px 20px 30px;margin:0 0 8px}',
+      '#grand-hero .gh-eye{font-size:11px;letter-spacing:3px;color:#9a9a9a;margin:0 0 8px}',
+      '#grand-hero .gh-title{font-size:30px;font-weight:900;letter-spacing:-1px;margin:0 0 6px}',
+      '#grand-hero .gh-sub{font-size:13px;color:#cfcfcf;margin:0 0 20px;line-height:1.6}',
+      '#grand-hero .gh-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}',
+      '.gh-cta{display:inline-flex;align-items:center;gap:7px;border-radius:30px;padding:13px 26px;font-size:15px;font-weight:800;text-decoration:none;line-height:1}',
+      '.gh-cta-main{background:#06C755;color:#fff!important}',
+      '.gh-cta-line{background:#fff;color:#111!important}',
+      /* 區塊標題（老闆的話/熱門商品）統一 */
+      '#main_width img[src*="/pattern/"]{max-width:100%;height:auto}',
+      /* 常駐浮動鈕：手機桌機都看得到 */
+      '#grand-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;background:#06C755;color:#fff!important;font-size:15px;font-weight:800;text-decoration:none;padding:14px 30px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:8px}',
+      '#grand-fab:active{transform:translateX(-50%) scale(.97)}'
+    ].join('');
+    (document.head || document.documentElement).appendChild(css);
+  }
+
+  function buildHero() {
+    var mw = document.getElementById('main_width');
+    if (!mw || document.getElementById('grand-hero')) return;
+    var hero = document.createElement('div');
+    hero.id = 'grand-hero';
+    hero.innerHTML =
+      '<p class="gh-eye">日本直送・專業集運代購</p>' +
+      '<h1 class="gh-title">GRAND 天倉</h1>' +
+      '<p class="gh-sub">日本各大批店精選商品・MDM 進價・一站式跨境代付代購</p>' +
+      '<div class="gh-btns">' +
+        '<a class="gh-cta gh-cta-main" href="' + STORE + '">🛍 進入商品目錄（146 件）→</a>' +
+        '<a class="gh-cta gh-cta-line" href="' + LINE + '" target="_blank" rel="noopener">LINE 詢問</a>' +
+      '</div>';
+    mw.insertBefore(hero, mw.firstChild);
+  }
+
+  function buildFab() {
+    if (document.getElementById('grand-fab')) return;
+    var fab = document.createElement('a');
+    fab.id = 'grand-fab';
+    fab.href = STORE;
+    fab.innerHTML = '🛍 看全部商品';
+    document.body.appendChild(fab);
+  }
+
+  function run() { injectCSS(); buildHero(); buildFab(); }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+})();
