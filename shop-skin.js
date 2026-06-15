@@ -607,7 +607,8 @@
     if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    if (isProductListPage()) tryPrettyList(); else buildMemberPanel();
+    else if (isProductListPage()) tryPrettyList();
+    else buildMemberPanel();
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
