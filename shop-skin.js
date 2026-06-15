@@ -50,7 +50,14 @@
       '#main_width img[src*="/pattern/207097/"]{display:none!important}',
       /* 常駐浮動鈕：手機桌機都看得到 */
       '#grand-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;background:#06C755;color:#fff!important;font-size:15px;font-weight:800;text-decoration:none;padding:14px 30px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:8px}',
-      '#grand-fab:active{transform:translateX(-50%) scale(.97)}'
+      '#grand-fab:active{transform:translateX(-50%) scale(.97)}',
+      /* 隱密管理入口（左下角，淡灰，客人不會注意；老闆找得到） */
+      '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.6;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
+      '#grand-admin:hover{opacity:1;color:#888}',
+      /* 管理登入彈窗：把藏在 .left_td 裡的 #div_login 搬出來置中顯示 */
+      '#grand-login-wrap{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}',
+      '#grand-login-wrap.hide{display:none!important}',
+      '#grand-login-wrap #div_login{display:block!important;position:relative;z-index:9999;margin:0!important}'
     ].join('');
     (document.head || document.documentElement).appendChild(css);
   }
@@ -81,6 +88,35 @@
     fab.href = STORE;
     fab.innerHTML = '🛍 看全部商品';
     document.body.appendChild(fab);
+  }
+
+  // 隱密管理入口：登入框 #div_login 原本被藏在 display:none 的 .left_td 裡，
+  // 點「・管理」時把它搬到彈窗、強制顯示，老闆輸入密碼即可登入後台。
+  function openAdmin() {
+    var d = document.getElementById('div_login');
+    if (!d) { alert('找不到登入框，請重新整理頁面'); return; }
+    var wrap = document.getElementById('grand-login-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'grand-login-wrap';
+      document.body.appendChild(wrap);
+      wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.classList.add('hide'); });
+    }
+    wrap.classList.remove('hide');
+    wrap.appendChild(d);                       // 搬出隱藏的 .left_td
+    d.style.setProperty('display', 'block', 'important');
+    var pw = d.querySelector('#pwboss');
+    if (pw) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 60);
+  }
+
+  function buildAdminEntry() {
+    if (document.getElementById('grand-admin')) return;
+    var a = document.createElement('div');
+    a.id = 'grand-admin';
+    a.textContent = '・管理';
+    a.title = '網站管理登入';
+    a.addEventListener('click', openAdmin);
+    document.body.appendChild(a);
   }
 
   // 把 Shop2000 的浮動購物車(position:fixed, 內含「結帳」)移到右上角，避免壓住 hero 的 CTA
@@ -116,6 +152,7 @@
     injectCSS();
     if (isHome()) buildHero();
     buildFab();
+    buildAdminEntry();
     fixCart();
     cleanArtifacts();
   }
