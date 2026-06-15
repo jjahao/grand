@@ -444,13 +444,136 @@
     var mw = document.getElementById('main_width'); if (mw) mw.style.removeProperty('display');
   }
 
+  /* ===== 商品列表頁：Amazon JP 風格漂亮格 + 直接選購（接官網原生購物車） ===== */
+  function isProductListPage() {
+    if (!/\/product(\/|$)/.test(location.pathname)) return false; // 在 /product 下
+    if (/\/product\/p\d+/.test(location.pathname)) return false;  // 排除單一商品內頁
+    return true;
+  }
+  function gpEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function gatherProducts() {
+    var imgs = document.querySelectorAll('img.pimg'), items = [], seen = {};
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i], psn = img.getAttribute('psn'); if (!psn || seen[psn]) continue; seen[psn] = 1;
+      var td = img.closest('td') || (img.parentElement && img.parentElement.parentElement);
+      var a = td ? td.querySelector('a[href*="/product/p"]') : null;
+      var txt = td ? td.innerText : '';
+      items.push({ psn: psn, img: img.getAttribute('src') || '', name: a ? a.textContent.trim() : '', nt: (txt.match(/台幣\s*([0-9,]+)/) || [])[1] || '' });
+    }
+    return items;
+  }
+  function productContainer() {
+    var img = document.querySelector('img.pimg'); if (!img) return null;
+    var el = img; for (var i = 0; i < 6; i++) { el = el.parentElement; if (!el) break; if (el.querySelectorAll('img.pimg').length >= 4) return el; }
+    return null;
+  }
+  function ensureBuyct(v) {
+    var bc = document.getElementById('buyct');
+    if (!bc) { bc = document.createElement('input'); bc.type = 'hidden'; bc.id = 'buyct'; document.body.appendChild(bc); }
+    bc.value = v; return bc;
+  }
+  function gpSyncCount() {
+    var g = document.querySelector('#buyGs'), c = document.getElementById('gp-cnt');
+    if (c) c.textContent = g ? (g.innerText.trim() || '0') : '0';
+  }
+  function renderPrettyGrid(items) {
+    var grid = document.getElementById('gp-grid'); if (!grid) return;
+    grid.innerHTML = items.map(function (p) {
+      var price = p.nt ? ('NT$' + p.nt + '<small> 起</small>') : '<small>詢價</small>';
+      var full = p.img.replace(/-(\d+)\.jpg/, '-$1o.jpg');
+      return '<div class="gp-card" data-psn="' + gpEsc(p.psn) + '">' +
+        '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy"></div>' +
+        '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
+        '<div class="gp-dlv">日本直送・原裝到府</div>' +
+        '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><span class="n">1</span><button class="inc" type="button">＋</button></div>' +
+        '<button class="gp-add" type="button">加入購物車</button></div></div></div>';
+    }).join('');
+    gpSyncCount();
+  }
+  function buildPrettyList() {
+    if (document.getElementById('gp-wrap')) return;
+    var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
+    // 樣式
+    if (!document.getElementById('gp-css')) {
+      var css = document.createElement('style'); css.id = 'gp-css';
+      css.textContent = [
+        '#gp-wrap{max-width:1240px;margin:0 auto;padding:8px 12px 110px;background:#fff;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}',
+        '#gp-head{padding:10px 2px 12px}#gp-head .t{font-size:19px;font-weight:900;color:#0F1111}#gp-head .s{font-size:12px;color:#565959}',
+        '#gp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}',
+        '@media(min-width:760px){#gp-grid{grid-template-columns:repeat(4,1fr);gap:16px}}',
+        '.gp-card{background:#fff;border:1px solid #e3e6e6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}',
+        '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
+        '.gp-imw{padding:10px}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
+        '.gp-bd{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}',
+        '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}',
+        '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
+        '.gp-dlv{font-size:11px;color:#007600}',
+        '.gp-row{display:flex;align-items:center;gap:8px;margin-top:auto}',
+        '.gp-qty{display:flex;align-items:center;border:1px solid #d5d9d9;border-radius:8px}',
+        '.gp-qty button{width:30px;height:34px;border:0;background:#f7f8f8;font-size:17px;font-weight:700;color:#0F1111;cursor:pointer}',
+        '.gp-qty span{width:28px;text-align:center;font-size:14px;font-weight:700}',
+        '.gp-add{flex:1;height:36px;border:0;border-radius:18px;background:#FFD814;color:#0F1111;font-weight:700;font-size:13px;cursor:pointer}',
+        '.gp-add.added{background:#e7f6e7;color:#007600;border:1px solid #b6e0b6}',
+        '#gp-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111;font-weight:800;font-size:15px;padding:13px 26px;border-radius:28px;box-shadow:0 8px 24px rgba(0,0,0,.28);border:0;cursor:pointer;display:flex;gap:10px;align-items:center}',
+        '#gp-bar .c{background:#B12704;color:#fff;border-radius:20px;padding:2px 10px;font-size:13px}',
+        '#gp-lb{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}#gp-lb img{max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:8px}'
+      ].join('');
+      document.head.appendChild(css);
+    }
+    // 隱藏原生商品區（保留 #main_width 其餘部分＝標題/排序/下頁分頁，仍可換頁）
+    var cont = productContainer(); if (cont) cont.style.setProperty('display', 'none', 'important');
+    // 結構
+    var mw = document.getElementById('main_width');
+    var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
+    wrap.innerHTML = '<div id="gp-head"><div class="t">精選商品</div><div class="s">點圖看大圖 ・ 選好數量加入 ・ 最後按下方總結帳一次結帳（換頁請用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
+    if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
+    var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
+    bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
+    var lb = document.createElement('div'); lb.id = 'gp-lb'; lb.innerHTML = '<img>'; document.body.appendChild(lb);
+    lb.addEventListener('click', function () { lb.style.display = 'none'; });
+    bar.addEventListener('click', function () { try { if (typeof to_mycar1 === 'function') to_mycar1(); } catch (e) {} });
+    // 事件委派
+    wrap.addEventListener('click', function (e) {
+      var im = e.target.closest('.im');
+      if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
+      var card = e.target.closest('.gp-card'); if (!card) return;
+      var n = card.querySelector('.n');
+      if (e.target.classList.contains('inc')) { n.textContent = (+n.textContent + 1); return; }
+      if (e.target.classList.contains('dec')) { n.textContent = Math.max(1, +n.textContent - 1); return; }
+      if (e.target.classList.contains('gp-add')) {
+        var qty = +n.textContent, psn = card.getAttribute('data-psn');
+        ensureBuyct(qty);
+        try { if (typeof mycar_bk === 'function') { mycar_bk(psn); if (typeof clear_buyTxt === 'function') setTimeout(clear_buyTxt, 900); } } catch (er) {}
+        var btn = e.target; btn.classList.add('added'); btn.textContent = '✓ 已加入 ' + qty + ' 件';
+        setTimeout(function () { btn.classList.remove('added'); btn.textContent = '加入購物車'; }, 1800);
+        setTimeout(gpSyncCount, 1200);
+      }
+    });
+    renderPrettyGrid(items);
+    setInterval(gpSyncCount, 1500);
+    // 換頁（原生分頁可能用 AJAX 換掉商品）→ 觀察商品變動就重建格子
+    if (cont) {
+      var t; var obs = new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { var it = gatherProducts(); if (it.length) renderPrettyGrid(it); }, 350); });
+      try { obs.observe(cont, { childList: true, subtree: true }); } catch (e) {}
+    }
+  }
+  function tryPrettyList() {
+    // 商品(img.pimg)常較晚載入，輪詢最多 ~8 秒
+    var tries = 0;
+    var iv = setInterval(function () {
+      if (document.getElementById('gp-wrap')) { clearInterval(iv); return; }
+      if (document.querySelectorAll('img.pimg').length >= 4) { clearInterval(iv); buildPrettyList(); }
+      else if (tries++ > 16) clearInterval(iv);
+    }, 500);
+  }
+
   function run() {
     ensureViewport();
     // 店長已登入 → 皮膚讓位，直接用舊系統管理（含工具列較晚載入，下方再輪詢補偵測）
     if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    buildMemberPanel();
+    if (isProductListPage()) tryPrettyList(); else buildMemberPanel();
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
