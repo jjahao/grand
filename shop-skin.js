@@ -429,13 +429,20 @@
   }
 
   function fixCart() {
+    // 商品列表頁已有底部黃色「🛒 總結帳」可用，原生右上小框重複又會擋畫面 → 直接藏掉。
+    // 其他頁(會員/結帳…)維持原樣放右上小角。
+    var hideOnList = isProductListPage();
     var nodes = document.querySelectorAll('div,span,a');
     for (var i = 0; i < nodes.length; i++) {
       var e = nodes[i];
       if (getComputedStyle(e).position === 'fixed' && /結帳/.test(e.textContent || '') && e.offsetHeight < 130) {
-        e.style.setProperty('top', '6px', 'important');
-        e.style.setProperty('right', '8px', 'important');
-        e.style.setProperty('z-index', '50', 'important');
+        if (hideOnList) {
+          e.style.setProperty('display', 'none', 'important');
+        } else {
+          e.style.setProperty('top', '6px', 'important');
+          e.style.setProperty('right', '8px', 'important');
+          e.style.setProperty('z-index', '50', 'important');
+        }
         break;
       }
     }
