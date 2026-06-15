@@ -250,11 +250,7 @@
         '<a class="ghm ghm-join" href="' + MEMBER + '">✨ 加入會員</a>' +
         '<a class="ghm ghm-login" href="' + LOGIN + '">👤 會員登入</a>' +
       '</div>' +
-      '<div class="gl-cta gl-btns" style="margin-top:10px;gap:10px;justify-content:center;">' +
-        '<a class="gl-ghost" href="' + ORDER + '">📋 會員中心</a>' +
-        '<a class="gl-buy" href="' + ORDER + '">🧾 我的訂單</a>' +
-      '</div>' +
-      '<a class="gh-center" href="' + ORDER + '">📋 會員中心・我的訂單 / 點數 / 帳務</a>' +
+      '<a class="gh-center" href="' + MEMBER + '">📋 會員中心｜訂單・點數・帳務</a>' +
     '</section>' +
 
     '<section id="gl-show">' +
@@ -264,9 +260,8 @@
         '<p class="gt">🔓 加入會員，解鎖完整商品與會員批價</p>' +
         '<p class="gd">會員可看全部到貨照片、即時新品與專屬報價</p>' +
         '<div class="gbtns">' +
-          '<a class="gl-mini o" href="/member">加入會員</a>' +
+          '<a class="gl-mini o" href="' + MEMBER + '">加入會員</a>' +
           '<a class="gl-mini j" href="' + STORE + '">先逛逛看</a>' +
-          '<a class="gl-mini j" href="' + ORDER + '">我的訂單</a>' +
         '</div>' +
       '</div>' +
     '</section>' +
@@ -336,7 +331,7 @@
     panel.id = 'grand-member-panel';
     panel.innerHTML =
       '<a class="gm-primary" href="' + STORE + '">🛒 逛商品目錄</a>' +
-      '<a class="gm-secondary" href="' + ORDER + '">👤 會員中心</a>' +
+      '<a class="gm-secondary" href="' + MEMBER + '">👤 會員中心</a>' +
       '<a class="gm-secondary" href="' + ORDER + '">🧾 我的訂單</a>';
     document.body.appendChild(panel);
   }
@@ -434,15 +429,37 @@
     }
   }
 
+  /* 店長(boss)登入偵測：店長工具列含「購物車設定/批次編輯商品/訂單管理」等只有店長看得到的項目。 */
+  function isBoss() {
+    try {
+      var t = document.body ? document.body.innerText : '';
+      return /購物車設定|批次編輯商品|店長工具|商品管理/.test(t);
+    } catch (e) { return false; }
+  }
+  /* 店長登入後：皮膚整個讓位，還原成舊系統頁面，讓店長工具列可立即管理。 */
+  function bossStepAside() {
+    ['grand-skin-css', 'grand-landing', 'grand-fab', 'grand-member-panel', 'grand-admin', 'grand-login-wrap'].forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.remove();
+    });
+    var mw = document.getElementById('main_width'); if (mw) mw.style.removeProperty('display');
+  }
+
   function run() {
     ensureViewport();
+    // 店長已登入 → 皮膚讓位，直接用舊系統管理（含工具列較晚載入，下方再輪詢補偵測）
+    if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    buildFab();
     buildMemberPanel();
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
+    // 店長工具列常較晚載入：偵測到就讓位（最多監看 ~8 秒）
+    var tries = 0;
+    var iv = setInterval(function () {
+      if (isBoss()) { clearInterval(iv); bossStepAside(); }
+      else if (tries++ > 10) clearInterval(iv);
+    }, 800);
     // 從手機切到電腦版後，自動把店長登入框打開（接續 openAdmin 的旗標）
     try {
       if (sessionStorage.getItem('grand_open_admin') === '1' && document.getElementById('div_login')) {
