@@ -92,7 +92,19 @@
     }
   }
 
-  function run() { injectCSS(); buildHero(); buildFab(); fixCart(); cleanArtifacts(); }
+  // 是否首頁（hero 只在首頁顯示，內頁如會員/購物車/結帳不放 hero）
+  function isHome() {
+    var p = location.pathname.replace(/\/+$/, '');
+    return p === '' || /\/(index|default)(\.\w+)?$/i.test(p);
+  }
+
+  function run() {
+    injectCSS();
+    if (isHome()) buildHero();
+    buildFab();
+    fixCart();
+    cleanArtifacts();
+  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);
