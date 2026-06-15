@@ -13,6 +13,13 @@
   var LINE = 'https://line.me/ti/p/~@562spzag';
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 註冊/加入會員頁
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
+
+  // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
+  // 避免「跨站(jjahao→shop2000)註冊/登入後又被導回靜態目錄」造成 405。
+  (function () {
+    var gm = (location.search.match(/[?&]gm=(join|login)/) || [])[1];
+    if (gm) location.replace(gm === 'join' ? MEMBER : LOGIN);
+  })();
   var QR_LINE = 'https://img2.shop2000.com.tw/75210/self/j20251111100158_o.jpg';
   var QR_WECHAT = 'https://img2.shop2000.com.tw/75210/self/j20230428133953_o.jpg';
 
