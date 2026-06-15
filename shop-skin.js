@@ -12,7 +12,7 @@
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
-  var ORDER = 'https://grand.shop2000.com.tw/member/my_order.aspx'; // 訂單歷史
+  var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
 
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
