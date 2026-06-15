@@ -343,19 +343,49 @@
 
   function openAdmin() {
     var d = document.getElementById('div_login');
-    if (!d) { alert('找不到登入框，請重新整理頁面'); return; }
-    var wrap = document.getElementById('grand-login-wrap');
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.id = 'grand-login-wrap';
-      document.body.appendChild(wrap);
-      wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.classList.add('hide'); });
+    if (d) {
+      // 桌機版：把 #div_login 搬出來置中
+      var wrap = document.getElementById('grand-login-wrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'grand-login-wrap';
+        document.body.appendChild(wrap);
+        wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.classList.add('hide'); });
+      }
+      wrap.classList.remove('hide');
+      wrap.appendChild(d);
+      d.style.setProperty('display', 'block', 'important');
+      var pw = d.querySelector('#pwboss');
+      if (pw) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 60);
+      return;
     }
-    wrap.classList.remove('hide');
-    wrap.appendChild(d);
-    d.style.setProperty('display', 'block', 'important');
-    var pw = d.querySelector('#pwboss');
-    if (pw) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 60);
+    // 手機版/找不到 #div_login：自建輸入框，呼叫原生 boss_login()
+    var ov = document.getElementById('grand-boss-ov');
+    if (ov) { ov.style.display = 'flex'; return; }
+    ov = document.createElement('div');
+    ov.id = 'grand-boss-ov';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;border:2px solid #CDA349;padding:24px;min-width:280px;text-align:center">' +
+      '<div style="font-weight:900;font-size:16px;color:#2E1C24;margin-bottom:14px">店長後台登入</div>' +
+      '<input id="grand-boss-pw" type="password" placeholder="請輸入密碼" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;margin-bottom:12px;box-sizing:border-box" autocomplete="current-password">' +
+      '<button id="grand-boss-btn" style="width:100%;padding:12px;background:#CDA349;color:#fff;font-weight:900;font-size:15px;border:0;border-radius:8px;cursor:pointer">登入</button>' +
+      '<div style="margin-top:10px;font-size:12px;color:#aaa;cursor:pointer" id="grand-boss-cancel">取消</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#grand-boss-cancel').addEventListener('click', function(){ ov.style.display='none'; });
+    ov.querySelector('#grand-boss-btn').addEventListener('click', function(){
+      var pw = ov.querySelector('#grand-boss-pw').value;
+      if (!pw) return;
+      // 注入 #pwboss 供 boss_login() 讀取，再呼叫原生函式
+      var hidden = document.getElementById('pwboss');
+      if (!hidden) { hidden = document.createElement('input'); hidden.type='hidden'; hidden.id='pwboss'; document.body.appendChild(hidden); }
+      hidden.value = pw;
+      if (typeof boss_login === 'function') { boss_login(); ov.style.display='none'; }
+      else if (typeof pwbossPress === 'function') { pwbossPress(); ov.style.display='none'; }
+      else { alert('登入函式未載入，請用電腦版登入'); }
+    });
+    setTimeout(function(){ try{ ov.querySelector('#grand-boss-pw').focus(); }catch(e){} }, 80);
   }
 
   function buildAdminEntry() {
