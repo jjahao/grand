@@ -18,7 +18,12 @@
   // 避免「跨站(jjahao→shop2000)註冊/登入後又被導回靜態目錄」造成 405。
   (function () {
     var gm = (location.search.match(/[?&]gm=(join|login)/) || [])[1];
-    if (gm) location.replace(gm === 'join' ? MEMBER : LOGIN);
+    if (gm) {
+      // 先把網址的 ?gm 清掉，否則登入頁的 http_ref(=來源頁) 會帶 ?gm，
+      // 登入完跳回 ?gm 又被轉去登入 → 死循環(看似「登入後不動」)。
+      try { history.replaceState(null, '', '/'); } catch (e) {}
+      location.replace(gm === 'join' ? MEMBER : LOGIN);
+    }
   })();
   var QR_LINE = 'https://img2.shop2000.com.tw/75210/self/j20251111100158_o.jpg';
   var QR_WECHAT = 'https://img2.shop2000.com.tw/75210/self/j20230428133953_o.jpg';
