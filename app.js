@@ -72,7 +72,7 @@
     const n = cartCount();
     if (n > 0) {
       cartBar.hidden = false;
-      cartBarText.textContent = n + ' 件 ・ 詢價單';
+      cartBarText.textContent = n + ' 件 ・ NT$' + cartSum().toLocaleString();
     } else {
       cartBar.hidden = true;
     }
@@ -121,8 +121,8 @@
         <div class="card-body">
           <div class="card-name">${esc(p.name)}</div>
           <div class="card-code">${esc(p.code || '')}</div>
-          <div class="card-price">💬 LINE 詢價</div>
-          <button class="card-cta" type="button">🛒 加入詢價單</button>
+          <div class="card-price">NT$${p.price.toLocaleString()}<small> 起</small></div>
+          <button class="card-cta" type="button">🛒 加入購物車</button>
         </div>
       `;
       card.querySelector('.card-img').addEventListener('click', () => openLb(p));
@@ -139,7 +139,7 @@
     lbImg.style.display = p.img ? 'block' : 'none';
     lbCode.textContent = p.code || '';
     lbName.textContent = p.name;
-    lbPrice.textContent = '💬 加 LINE 詢價';
+    lbPrice.textContent = `NT$${(p.price || 0).toLocaleString()}`;
     lbDesc.textContent = p.desc || '';
     lb.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -174,7 +174,7 @@
         <div class="ci-img">${it.img ? `<img src="${esc(it.img)}" alt="">` : ''}</div>
         <div class="ci-info">
           <div class="ci-name">${esc(it.name)}</div>
-          <div class="ci-price">${esc(it.code || '')}</div>
+          <div class="ci-price">NT$${(it.price || 0).toLocaleString()}</div>
         </div>
         <div class="ci-qty">
           <button class="ci-btn" data-act="dec" type="button">−</button>
@@ -185,19 +185,19 @@
       row.querySelector('[data-act=inc]').addEventListener('click', () => setQty(it.id, +1));
       cartItems.appendChild(row);
     });
-    cartTotal.textContent = items.length + ' 項';
+    cartTotal.textContent = 'NT$' + cartSum().toLocaleString();
   }
 
   // ── LINE order: copy summary + open LINE ──
   function orderText() {
     const items = Object.values(cart);
-    let t = '【GRAND 詢價／訂購單】\n';
+    let t = '【GRAND 訂購單】\n';
     items.forEach((it, i) => {
       t += `${i + 1}. ${it.name}`;
       if (it.code) t += `（${it.code}）`;
-      t += ` x${it.qty}\n`;
+      t += ` x${it.qty} = NT$${(it.qty * it.price).toLocaleString()}\n`;
     });
-    t += `共 ${items.length} 項 / ${cartCount()} 件\n— 請協助確認庫存與報價，謝謝！`;
+    t += `合計：NT$${cartSum().toLocaleString()}\n— 請協助確認庫存與報價，謝謝！`;
     return t;
   }
   cartLineBtn.addEventListener('click', () => {
