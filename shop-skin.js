@@ -508,7 +508,9 @@
     return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
   }
   function gatherProducts() {
-    var imgs = document.querySelectorAll('img.pimg'), items = [], seen = {};
+    // 只抓 #plist_tb（真正的分類/全部商品清單）；plist_tb{數字} 是固定推薦區，排除。
+    var root = document.getElementById('plist_tb') || document;
+    var imgs = root.querySelectorAll('img.pimg'), items = [], seen = {};
     for (var i = 0; i < imgs.length; i++) {
       var img = imgs[i], psn = img.getAttribute('psn'); if (!psn || seen[psn]) continue; seen[psn] = 1;
       var td = img.closest('td') || (img.parentElement && img.parentElement.parentElement);
@@ -519,6 +521,7 @@
     return items;
   }
   function productContainer() {
+    var pt = document.getElementById('plist_tb'); if (pt) return pt; // 真正的商品清單容器
     var img = document.querySelector('img.pimg'); if (!img) return null;
     var el = img; for (var i = 0; i < 6; i++) { el = el.parentElement; if (!el) break; if (el.querySelectorAll('img.pimg').length >= 4) return el; }
     return null;
@@ -586,8 +589,10 @@
       ].join('');
       document.head.appendChild(css);
     }
-    // 隱藏原生商品區（保留 #main_width 其餘部分＝標題/排序/下頁分頁，仍可換頁）
-    var cont = productContainer(); if (cont) cont.style.setProperty('display', 'none', 'important');
+    // 隱藏所有原生商品清單(plist_tb 真清單 + plist_tb{數字}推薦區)，保留標題/排序/分頁
+    var pls = document.querySelectorAll('[id^="plist_tb"]');
+    for (var k = 0; k < pls.length; k++) pls[k].style.setProperty('display', 'none', 'important');
+    var cont = productContainer();
     // 結構
     var mw = document.getElementById('main_width');
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
@@ -628,7 +633,7 @@
     var tries = 0;
     var iv = setInterval(function () {
       if (document.getElementById('gp-wrap')) { clearInterval(iv); return; }
-      if (document.querySelectorAll('img.pimg').length >= 4) { clearInterval(iv); buildPrettyList(); }
+      if ((document.getElementById('plist_tb') || document).querySelectorAll('img.pimg').length >= 4) { clearInterval(iv); buildPrettyList(); }
       else if (tries++ > 16) clearInterval(iv);
     }, 500);
   }
