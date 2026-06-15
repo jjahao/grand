@@ -341,33 +341,52 @@
     document.body.appendChild(panel);
   }
 
-  function openAdmin() {
-    var d = document.getElementById('div_login');
-    if (d) {
-      // 桌機版：把 #div_login 搬出來置中
-      var wrap = document.getElementById('grand-login-wrap');
-      if (!wrap) {
-        wrap = document.createElement('div');
-        wrap.id = 'grand-login-wrap';
-        document.body.appendChild(wrap);
-        wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.classList.add('hide'); });
-      }
-      wrap.classList.remove('hide');
-      wrap.appendChild(d);
-      d.style.setProperty('display', 'block', 'important');
-      var pw = d.querySelector('#pwboss');
-      if (pw) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 60);
-      return;
+  // 把原生登入框 #div_login 搬出來置中顯示
+  function showBossBox(d) {
+    var wrap = document.getElementById('grand-login-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'grand-login-wrap';
+      document.body.appendChild(wrap);
+      wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.classList.add('hide'); });
     }
-    // 手機版沒有 #div_login 也沒有 boss_login()（Shop2000 店長登入是桌機版限定）。
-    // 解法：先切到電腦版(chg_device('pc'))，並記旗標，切換後自動把登入框打開。
+    wrap.classList.remove('hide');
+    wrap.appendChild(d);
+    d.style.setProperty('display', 'block', 'important');
+    var pw = d.querySelector('#pwboss');
+    if (pw) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 60);
+  }
+  // 切到電腦版（手機版才有登入框與 boss_login）
+  function switchToPc() {
     if (typeof chg_device === 'function') {
       try { sessionStorage.setItem('grand_open_admin', '1'); } catch (e) {}
       chg_device('pc');
+      return true;
+    }
+    return false;
+  }
+  function setAdminText(t) {
+    var a = document.getElementById('grand-admin');
+    if (a) a.textContent = t;
+  }
+  function openAdmin() {
+    var d = document.getElementById('div_login');
+    if (d) { showBossBox(d); return; }
+    // 窄版(手機)且無登入框 → 直接切電腦版（boss 登入是桌機限定）
+    if (window.innerWidth < 700) {
+      if (!switchToPc()) alert('店長登入需電腦版。請在瀏覽器選「要求電腦版網站」後再點・管理登入。');
       return;
     }
-    // 連 chg_device 都沒有 → 引導使用者用瀏覽器「要求電腦版網站」
-    alert('店長登入需電腦版。請在瀏覽器選「要求電腦版網站」後再點・管理登入。');
+    // 桌機：登入框是頁面較晚才載入的，輪詢等它出現（最多 ~5 秒），避免一點就誤判
+    setAdminText('開啟中…');
+    var tries = 0;
+    (function wait() {
+      var el = document.getElementById('div_login');
+      if (el) { setAdminText('・管理'); showBossBox(el); return; }
+      if (tries++ < 20) { setTimeout(wait, 250); return; }
+      setAdminText('・管理');
+      if (!switchToPc()) alert('登入框載入失敗，請重新整理頁面再試。');
+    })();
   }
 
   function buildAdminEntry() {
