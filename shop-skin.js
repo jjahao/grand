@@ -24,7 +24,8 @@
       /* 藏掉雜亂的大 banner 圖與舊圖片導覽列 */
       'img[src*="/banner.jpg"],img[src*="/banner.gif"]{display:none!important}',
       /* GRAND 自訂 hero */
-      '#grand-hero{background:#111;color:#fff;text-align:center;padding:34px 20px 30px;margin:0 0 8px}',
+      '#grand-hero{display:block!important;width:100%!important;box-sizing:border-box;background:#111!important;color:#fff!important;text-align:center!important;padding:30px 20px 26px!important;margin:0 0 8px!important;position:relative;z-index:1}',
+      '#grand-hero .gh-inner{max-width:760px;margin:0 auto}',
       '#grand-hero .gh-eye{font-size:11px;letter-spacing:3px;color:#9a9a9a;margin:0 0 8px}',
       '#grand-hero .gh-title{font-size:30px;font-weight:900;letter-spacing:-1px;margin:0 0 6px}',
       '#grand-hero .gh-sub{font-size:13px;color:#cfcfcf;margin:0 0 20px;line-height:1.6}',
@@ -47,14 +48,17 @@
     var hero = document.createElement('div');
     hero.id = 'grand-hero';
     hero.innerHTML =
+      '<div class="gh-inner">' +
       '<p class="gh-eye">日本直送・專業集運代購</p>' +
       '<h1 class="gh-title">GRAND 天倉</h1>' +
       '<p class="gh-sub">日本各大批店精選商品・MDM 進價・一站式跨境代付代購</p>' +
       '<div class="gh-btns">' +
         '<a class="gh-cta gh-cta-main" href="' + STORE + '">🛍 進入商品目錄（146 件）→</a>' +
         '<a class="gh-cta gh-cta-line" href="' + LINE + '" target="_blank" rel="noopener">LINE 詢問</a>' +
+      '</div>' +
       '</div>';
-    mw.insertBefore(hero, mw.firstChild);
+    // 插在 #main_width 外面（前一個兄弟），避免被 Shop2000 的 table 版型擠壓
+    mw.parentNode.insertBefore(hero, mw);
   }
 
   function buildFab() {
