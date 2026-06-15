@@ -16,13 +16,14 @@
 
   /* 精品分類 showcase 版位（先用精緻漸層底圖佔位；日後把 img 換成真照片即可）
      要換真照片：把該分類的 img 設成你的圖片網址（建議放 jjahao.github.io/grand/showcase/xxx.jpg）。 */
+  var SHOW = 'https://jjahao.github.io/grand/showcase/';
   var CATS = [
-    { name: '日本百貨禮品', en: 'DEPARTMENT GIFTS', ic: '🎁', g: 'linear-gradient(150deg,#5A1F2B,#8E3247)' },
-    { name: 'MDM 直購', en: 'MDM DIRECT', ic: '🛍️', g: 'linear-gradient(150deg,#3A2415,#6B4423)' },
-    { name: '好市多代購', en: 'COSTCO', ic: '📦', g: 'linear-gradient(150deg,#123A2E,#1E6B52)' },
-    { name: '名牌精品', en: 'LUXURY', ic: '👜', g: 'linear-gradient(150deg,#1A1A1F,#3A3A45)' },
-    { name: '美妝藥妝', en: 'BEAUTY', ic: '💄', g: 'linear-gradient(150deg,#5A2540,#9E4470)' },
-    { name: '零食爆品', en: 'SNACKS', ic: '🍫', g: 'linear-gradient(150deg,#6B3410,#C25E1E)' }
+    { name: '日本百貨禮品', en: 'DEPARTMENT GIFTS', ic: '🎁', img: SHOW + 'gift.jpg', g: 'linear-gradient(150deg,#5A1F2B,#8E3247)' },
+    { name: 'MDM 直購', en: 'MDM DIRECT', ic: '🛍️', img: SHOW + 'shopping.jpg', g: 'linear-gradient(150deg,#3A2415,#6B4423)' },
+    { name: '好市多代購', en: 'COSTCO', ic: '📦', img: SHOW + 'costco.jpg', g: 'linear-gradient(150deg,#123A2E,#1E6B52)' },
+    { name: '名牌精品', en: 'LUXURY', ic: '👜', img: SHOW + 'luxury.jpg', g: 'linear-gradient(150deg,#1A1A1F,#3A3A45)' },
+    { name: '美妝藥妝', en: 'BEAUTY', ic: '💄', img: SHOW + 'beauty.jpg', g: 'linear-gradient(150deg,#5A2540,#9E4470)' },
+    { name: '零食爆品', en: 'SNACKS', ic: '🍫', img: SHOW + 'snacks.jpg', g: 'linear-gradient(150deg,#6B3410,#C25E1E)' }
   ];
 
   function isHome() {
