@@ -9,6 +9,15 @@
   var STORE = 'https://jjahao.github.io/grand/';
   var LINE = 'https://line.me/ti/p/~@562spzag';
 
+  // 全站缺 viewport meta → 手機用桌機寬度排版而溢出。補上讓全站手機自適應（最高槓桿的舒適化）
+  function ensureViewport() {
+    if (document.querySelector('meta[name=viewport]')) return;
+    var mt = document.createElement('meta');
+    mt.name = 'viewport';
+    mt.content = 'width=device-width, initial-scale=1';
+    (document.head || document.documentElement).appendChild(mt);
+  }
+
   function injectCSS() {
     if (document.getElementById('grand-skin-css')) return;
     var css = document.createElement('style');
@@ -21,6 +30,10 @@
       '#main_width{max-width:1000px!important;margin:0 auto!important;background:#fff!important}',
       '.left_td{display:none!important}',
       '.right_td{width:100%!important;padding:0!important}',
+      /* 手機防溢出：圖片/影片不超出畫面，整體允許自適應縮放 */
+      'html{-webkit-text-size-adjust:100%}',
+      '#main_width img,#main_width video,#main_width iframe{max-width:100%!important;height:auto}',
+      '@media(max-width:1000px){#main_width,.right_td{max-width:100%!important;width:100%!important}}',
       /* 藏掉雜亂的大 banner 圖與舊圖片導覽列 */
       'img[src*="/banner.jpg"],img[src*="/banner.gif"]{display:none!important}',
       /* GRAND 自訂 hero */
@@ -99,6 +112,7 @@
   }
 
   function run() {
+    ensureViewport();
     injectCSS();
     if (isHome()) buildHero();
     buildFab();
