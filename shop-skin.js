@@ -564,7 +564,7 @@
         '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy"></div>' +
         '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
         '<div class="gp-dlv">日本直送・原裝到府</div>' +
-        '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><span class="n">1</span><button class="inc" type="button">＋</button></div>' +
+        '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><input class="n" type="number" min="1" max="999" value="1" inputmode="numeric" title="可手打或點開選"><button class="inc" type="button">＋</button></div>' +
         '<button class="gp-add" type="button">加入購物車</button></div></div></div>';
     }).join('');
     gpSyncCount();
@@ -590,7 +590,22 @@
         '.gp-row{display:flex;align-items:center;gap:8px;margin-top:auto}',
         '.gp-qty{display:flex;align-items:center;border:1px solid #d5d9d9;border-radius:8px}',
         '.gp-qty button{width:30px;height:34px;border:0;background:#f7f8f8;font-size:17px;font-weight:700;color:#0F1111;cursor:pointer}',
-        '.gp-qty span{width:28px;text-align:center;font-size:14px;font-weight:700}',
+        '.gp-qty .n{width:42px;height:34px;text-align:center;font-size:14px;font-weight:700;border:0;border-left:1px solid #d5d9d9;border-right:1px solid #d5d9d9;background:#fff;color:#0F1111;-moz-appearance:textfield;outline:none;padding:0}',
+        '.gp-qty .n::-webkit-outer-spin-button,.gp-qty .n::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
+        '.gp-qty .n:focus{background:#FFF9E6}',
+        /* 數字輪彈窗(1~500橫滑選) */
+        '#gp-wheel{position:fixed;left:0;right:0;bottom:0;z-index:10001;background:#fff;border-top:1px solid #e3e6e6;box-shadow:0 -8px 22px rgba(0,0,0,.18);transform:translateY(100%);transition:transform .22s ease;padding:12px 0 14px}',
+        '#gp-wheel.on{transform:translateY(0)}',
+        '#gp-wheel-bd{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.35)}#gp-wheel-bd.on{display:block}',
+        '#gp-wheel-hd{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px}',
+        '#gp-wheel-hd .t{font-size:14px;font-weight:800;color:#0F1111}',
+        '#gp-wheel-hd .x{background:none;border:0;font-size:22px;line-height:1;color:#565959;cursor:pointer;padding:0 6px}',
+        '#gp-wheel-strip{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:6px 12px 4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin}',
+        '#gp-wheel-strip::-webkit-scrollbar{height:6px}#gp-wheel-strip::-webkit-scrollbar-thumb{background:#d5d9d9;border-radius:3px}',
+        '#gp-wheel-strip .w{flex:0 0 auto;min-width:48px;height:46px;display:flex;align-items:center;justify-content:center;border:1px solid #e3e6e6;border-radius:10px;background:#fff;font-size:17px;font-weight:800;color:#0F1111;cursor:pointer;scroll-snap-align:center}',
+        '#gp-wheel-strip .w:hover{background:#FFF9E6}',
+        '#gp-wheel-strip .w.cur{background:#FFD814;border-color:#FFD814}',
+        '#gp-wheel-hint{font-size:11.5px;color:#565959;text-align:center;margin-top:4px}',
         '.gp-add{flex:1;height:36px;border:0;border-radius:18px;background:#FFD814;color:#0F1111;font-weight:700;font-size:13px;cursor:pointer}',
         '.gp-add.added{background:#e7f6e7;color:#007600;border:1px solid #b6e0b6}',
         '#gp-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111;font-weight:800;font-size:15px;padding:13px 26px;border-radius:28px;box-shadow:0 8px 24px rgba(0,0,0,.28);border:0;cursor:pointer;display:flex;gap:10px;align-items:center}',
@@ -623,16 +638,50 @@
     var lb = document.createElement('div'); lb.id = 'gp-lb'; lb.innerHTML = '<img>'; document.body.appendChild(lb);
     lb.addEventListener('click', function () { lb.style.display = 'none'; });
     bar.addEventListener('click', function () { try { if (typeof to_mycar1 === 'function') to_mycar1(); } catch (e) {} });
+
+    // 數字輪(1~500 橫滑選)
+    var wheelBd = document.createElement('div'); wheelBd.id = 'gp-wheel-bd';
+    var wheel = document.createElement('div'); wheel.id = 'gp-wheel';
+    wheel.innerHTML = '<div id="gp-wheel-hd"><div class="t">選數量</div><button class="x" type="button" aria-label="關閉">✕</button></div><div id="gp-wheel-strip"></div><div id="gp-wheel-hint">橫向滑動 → 點數字選取</div>';
+    document.body.appendChild(wheelBd); document.body.appendChild(wheel);
+    var wheelTarget = null; // 目前在編輯的 input.n
+    function wheelClose() { wheel.classList.remove('on'); wheelBd.classList.remove('on'); wheelTarget = null; }
+    wheelBd.addEventListener('click', wheelClose);
+    wheel.querySelector('.x').addEventListener('click', wheelClose);
+    function wheelOpen(input) {
+      wheelTarget = input;
+      var strip = document.getElementById('gp-wheel-strip');
+      var cur = Math.max(1, Math.min(500, +input.value || 1));
+      var html = '';
+      for (var n = 1; n <= 500; n++) html += '<div class="w' + (n === cur ? ' cur' : '') + '" data-v="' + n + '">' + n + '</div>';
+      strip.innerHTML = html;
+      wheelBd.classList.add('on'); wheel.classList.add('on');
+      // 滾到目前值
+      setTimeout(function () {
+        var c = strip.querySelector('.w.cur');
+        if (c) strip.scrollLeft = c.offsetLeft - (strip.clientWidth / 2) + (c.offsetWidth / 2);
+      }, 30);
+    }
+    document.getElementById('gp-wheel-strip').addEventListener('click', function (e) {
+      var w = e.target.closest('.w'); if (!w || !wheelTarget) return;
+      var v = +w.getAttribute('data-v'); wheelTarget.value = v;
+      wheelClose();
+    });
+
+    function clampQty(v) { v = parseInt(v, 10); if (isNaN(v) || v < 1) v = 1; if (v > 500) v = 500; return v; }
+
     // 事件委派
     wrap.addEventListener('click', function (e) {
       var im = e.target.closest('.im');
       if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
       var card = e.target.closest('.gp-card'); if (!card) return;
       var n = card.querySelector('.n');
-      if (e.target.classList.contains('inc')) { n.textContent = (+n.textContent + 1); return; }
-      if (e.target.classList.contains('dec')) { n.textContent = Math.max(1, +n.textContent - 1); return; }
+      if (e.target.classList.contains('inc')) { n.value = clampQty((+n.value || 1) + 1); return; }
+      if (e.target.classList.contains('dec')) { n.value = clampQty((+n.value || 1) - 1); return; }
+      if (e.target === n) { wheelOpen(n); return; } // 點數字 → 開輪
       if (e.target.classList.contains('gp-add')) {
-        var qty = +n.textContent, psn = card.getAttribute('data-psn');
+        var qty = clampQty(n.value || 1); n.value = qty;
+        var psn = card.getAttribute('data-psn');
         ensureBuyct(qty);
         try { if (typeof mycar_bk === 'function') { mycar_bk(psn); if (typeof clear_buyTxt === 'function') setTimeout(clear_buyTxt, 900); } } catch (er) {}
         var btn = e.target; btn.classList.add('added'); btn.textContent = '✓ 已加入 ' + qty + ' 件';
@@ -640,6 +689,9 @@
         setTimeout(gpSyncCount, 1200);
       }
     });
+    // 手打數字後立刻規格化(失焦/按Enter)
+    wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
+    wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
     renderPrettyGrid(items);
     setInterval(gpSyncCount, 1500);
     // #plist_tb(真正商品清單)常晚於推薦區載入/換頁也會換 → 觀察整個 #main_width，
