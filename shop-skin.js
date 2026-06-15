@@ -619,13 +619,11 @@
         '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><input class="n" type="number" min="1" max="999" value="1" inputmode="numeric" title="可手打或點開選"><button class="inc" type="button">＋</button></div>' +
         '<button class="gp-add" type="button">加入購物車</button></div></div></div>';
     }).join('');
-    // 已快取的卡片立即顯示 brief
+    // 已快取的卡片立即顯示 brief（不主動預抓，避免後端速率限制「請放慢操作速度」）
     [].forEach.call(grid.querySelectorAll('.gp-card'), function (c) {
       var psn = c.getAttribute('data-psn'), r = gpRules[psn];
       if (r) gpApplyBriefToCard(c, r);
     });
-    // 沒快取的：lazy 抓(IntersectionObserver+並行限流)
-    gpKickPrefetch();
     gpSyncCount();
   }
   function gpApplyBriefToCard(card, rule) {
@@ -636,37 +634,8 @@
     else if (rule.step > 1) txt = '📦 ' + rule.step + ' 個一組（最少 ' + rule.min + ' 件）';
     if (txt) { b.textContent = txt; b.classList.add('on'); }
   }
-  /* 並行限流抓規則(最多 3 個 iframe 同時)，可視範圍優先 */
-  var gpPrefQ = [], gpPrefRunning = 0;
-  function gpKickPrefetch() {
-    var grid = document.getElementById('gp-grid'); if (!grid) return;
-    // 先排可視範圍內的；其他之後排
-    var cards = [].slice.call(grid.querySelectorAll('.gp-card'));
-    var inView = [], rest = [];
-    var vh = window.innerHeight || 800;
-    cards.forEach(function (c) {
-      var psn = c.getAttribute('data-psn'); if (!psn || gpRules[psn] || gpPending[psn]) return;
-      if (gpPrefQ.indexOf(c) >= 0) return;
-      var top = c.getBoundingClientRect().top;
-      if (top < vh * 1.5 && top > -200) inView.push(c); else rest.push(c);
-    });
-    gpPrefQ = inView.concat(rest, gpPrefQ);
-    gpPumpPrefetch();
-  }
-  function gpPumpPrefetch() {
-    while (gpPrefRunning < 3 && gpPrefQ.length) {
-      var card = gpPrefQ.shift(); if (!card.isConnected) continue;
-      var psn = card.getAttribute('data-psn'); if (!psn || gpRules[psn]) continue;
-      gpPrefRunning++;
-      (function (c, p) {
-        gpFetchRule(p).then(function (rule) {
-          if (c.isConnected) gpApplyBriefToCard(c, rule);
-        }).catch(function () {}).then(function () {
-          gpPrefRunning--; gpPumpPrefetch();
-        });
-      })(card, psn);
-    }
-  }
+  /* 預抓已關閉(被 Shop2000 速率限制「請放慢操作速度」擋)。保留空函式避免舊呼叫炸錯。 */
+  function gpKickPrefetch() {}
   function buildPrettyList() {
     if (document.getElementById('gp-wrap')) return;
     var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
@@ -789,6 +758,7 @@
       if (e.target.classList.contains('inc') || e.target.classList.contains('dec')) {
         var psn1 = card.getAttribute('data-psn'), dir = e.target.classList.contains('inc') ? 1 : -1;
         gpFetchRule(psn1).then(function (rule) {
+          gpApplyBriefToCard(card, rule);
           if (rule.ask) return;
           var step = rule.step || 1, min = rule.min || 1;
           var cur = +n.value || min, next;
@@ -836,8 +806,7 @@
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
     renderPrettyGrid(items);
     setInterval(gpSyncCount, 1500);
-    // 捲動時補抓進入視窗的卡片
-    var st; window.addEventListener('scroll', function () { clearTimeout(st); st = setTimeout(gpKickPrefetch, 250); }, { passive: true });
+    // 不再做卡片預抓/捲動補抓（被 Shop2000 速率限制擋住）；brief 改為使用者按 +/- 或加入時順手抓單筆
     // #plist_tb(真正商品清單)常晚於推薦區載入/換頁也會換 → 觀察整個 #main_width，
     // 一變動就重新隱藏原生清單 + 用 #plist_tb 重建格子。(#gp-wrap 在 #main_width 外，不會觸發迴圈)
     var watch = document.getElementById('main_width') || document.body;
