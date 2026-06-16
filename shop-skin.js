@@ -514,15 +514,77 @@
   function gpEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   /* 分類樹（主分類 i=id n=名 s=[次分類id,名,件數]）。topcls 導向 /product/{主}/{次}。 */
   var GCATS=[{"i":"681206","n":"迪士尼","s":[["1541427","11/10新品-米奇雪精靈系列",55],["1541022","11/4新品-冬季系列",41],["1530358","8/28新品-達菲鳥舞落葉系列",38],["1523064","7/3新品-達菲甜甜圈系列",24],["1518357","6/5新品",35],["1518356","6/3新品",12],["1518355","達菲20週年系列",57],["1519704","其他",1187]]},{"i":"714061","n":"好市多現貨","s":[]},{"i":"653720","n":"日本好市多","s":[["1364630","藥品/保健類",304],["1364631","零食類",374],["1364632","食品/酒類",427],["1364633","生活用品類",510],["1364634","衣著類",86],["1364635","美妝用品類",113],["1364636","文具類",34],["1364637","沐浴類",57]]},{"i":"654002","n":"便利商店","s":[["1365721","7-11",772],["1365722","family mart",176],["1365723","lawson",35]]},{"i":"653722","n":"量販店","s":[["1364642","零食類",915],["1364643","調味料",99],["1364644","糖果/巧克力",226],["1364645","其他零嘴小吃",213],["1402772","酒類",2]]},{"i":"653718","n":"MDM批發","s":[["1536504","DHC保健食品",5],["1450733","調味料",6],["1579264","清潔用品",18],["1450734","防蚊防蟲",16],["1450730","食品零食",222],["1450731","美妝・美妝小物",53],["1450729","入浴球",9],["1463220","瑪利歐系列",19],["1464923","OK繃系列",4],["1464918","三麗鷗系列",27],["1464921","寶可夢系列",3],["1463222","吉伊卡哇系列",60],["1463225","星之卡比系列",0],["1464919","森林家族系列",0],["1463226","トミカ玩具車",0],["1463227","麵包超人系列",29],["1463224","盒玩",0],["1450732","其它",182]]},{"i":"653726","n":"日本藥妝","s":[["1364650","日本處方簽專區",53],["1364651","藥品類",229],["1528345","Atomy",14]]},{"i":"713983","n":"茅乃舍","s":[]},{"i":"654004","n":"百貨禮盒","s":[["1375358","小倉山莊",33],["1559106","GRAMERCY NEWYORK",9],["1439404","GOD BLESS BUTTER 神之手",3],["1415451","GALLETE au BEURRE",17],["1415450","NY紐約起司蛋捲",8],["1375359","Tulip Rose",10],["1376695","YOKU MOKU",37],["1375360","Audrey 花束餅乾",19],["1376693","Sugar Butter Tree",15],["1376694","鎌倉五郎(半月)",4],["1376696","GATEAU FESTA HARADA",9],["1376690","東京牛奶起司工廠 Tokyo Milk cheese factory",7],["1415453","AND THE FRIET薯條餅乾",13],["1375362","上野風月堂/東京風月堂/神戶風月堂",42],["1375363","桂新堂",9],["1376847","福砂屋",7],["1394180","東京芭娜娜/迪士尼聯名",28],["1428921","FRANCAJS",7],["1375361","其他品牌",216],["1376697","名古屋蝦餅",3],["1439407","Mary's 巧克力",13],["1439411","Number sugar",5],["1439412","一創堂",6],["1439413","Sable Michelle 周遊世界餅乾罐",25],["1439414","銀座菊廼舎",4],["1439415","銀座西",5],["1439416","東京巧克力工廠",4],["1439450","Press Butter Sand",13],["1439452","PARIS BUTTER CHOCOLAT",7],["1439453","神戶布丁",4],["1439454","BENIYA 松鼠核桃",2],["1439457","CoroCoro waffle cube",4],["1439458","Cream cheese cake",3],["1439487","TOKYO ひよこ",2],["1439488","captain sweets burger",13],["1439495","Tokyo Corne Fleuri玫瑰花巧克力",2],["1439496","Sabrina小花酥餅",16],["1439503","BRULEE MERIZE布蕾",7],["1459558","BUTTER STATE's",10],["1459559","Apple & Butter",3],["1459562","喫茶店",8],["1459564","calbee",23],["1552628","TOKYO RUSK",8],["1552656","Colombin",4],["1571623","RAMEN CLUB 拉麵餅乾",6]]},{"i":"684454","n":"台北現貨","s":[]}];
+  // 多關鍵字過濾狀態：null = 不過濾；array = [token1, token2, ...]（全部 lowercase，AND 匹配）
+  var gpFilter = null;
+  function gpTokenize(v) {
+    return (v || '').trim().split(/[\s　]+/).filter(Boolean).map(function (t) { return t.toLowerCase(); });
+  }
+  function gpApplyFilter(items) {
+    if (!gpFilter || !gpFilter.length) return items;
+    return items.filter(function (p) {
+      var n = (p.name || '').toLowerCase();
+      return gpFilter.every(function (t) { return n.indexOf(t) >= 0; });
+    });
+  }
+  function gpCurCatLabel() {
+    // 當前分類顯示名（給搜尋提示用）
+    var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
+    if (!m) return '';
+    var live = gpReadLiveCats();
+    var mainId = m[1], subId = m[2] || '';
+    var mainName = '', subName = '';
+    var lm = live.mains.filter(function (x) { return x.id === mainId; })[0];
+    if (lm) mainName = lm.name;
+    else { var gc = GCATS.filter(function (c) { return c.i === mainId; })[0]; if (gc) mainName = gc.n; }
+    if (subId) {
+      var ls = live.subs.filter(function (x) { return x.id === subId; })[0];
+      if (ls) subName = ls.name;
+    }
+    return gpCleanCat(mainId, mainName, false) + (subName ? ' ／ ' + gpCleanCat(subId, subName, true) : '');
+  }
   function gpSearchBar() {
     var m = location.search.match(/[?&]kw=([^&]*)/);
     var cur = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
-    return '<div class="gp-search"><i class="gps-ic">🔍</i><input id="gp-kw" type="search" inputmode="search" placeholder="搜尋商品名稱…" value="' + gpEsc(cur) + '" autocomplete="off"><button id="gp-kw-go" type="button">搜尋</button>' + (cur ? '<a class="gp-kw-clear" href="/product">✕</a>' : '') + '</div>' + (cur ? '<div class="gp-kw-tip">搜尋「' + gpEsc(cur) + '」的結果</div>' : '');
+    var catLabel = gpCurCatLabel();
+    var ph = catLabel ? ('在「' + catLabel + '」內搜尋，可空格分多個關鍵字…') : '搜尋商品名稱（可空格分多個關鍵字）…';
+    var tip = '';
+    if (cur || gpFilter) {
+      var shown = cur || (gpFilter ? gpFilter.join(' ') : '');
+      tip = '<div class="gp-kw-tip">' + (catLabel ? '在「' + gpEsc(catLabel) + '」內搜尋「' : '搜尋「') + gpEsc(shown) + '」的結果</div>';
+    }
+    return '<div class="gp-search"><i class="gps-ic">🔍</i><input id="gp-kw" type="search" inputmode="search" placeholder="' + gpEsc(ph) + '" value="' + gpEsc(cur || (gpFilter ? gpFilter.join(' ') : '')) + '" autocomplete="off"><button id="gp-kw-go" type="button">搜尋</button>' + ((cur || gpFilter) ? '<a class="gp-kw-clear" href="javascript:void(0)" id="gp-kw-clear-btn">✕</a>' : '') + '</div>' + tip;
   }
   function gpDoSearch() {
     var inp = document.getElementById('gp-kw'); if (!inp) return;
     var v = (inp.value || '').trim();
-    location.href = v ? ('/product?kw=' + encodeURIComponent(v)) : '/product';
+    var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
+    var inCat = !!m;
+    if (!v) {
+      // 清空 → 重設過濾，回到當前分類首頁（或全部商品）
+      gpFilter = null;
+      if (location.search) location.href = inCat ? location.pathname : '/product';
+      else { var items = gatherProducts(); renderPrettyGrid(items); refreshSearchBar(); }
+      return;
+    }
+    gpFilter = gpTokenize(v);
+    if (inCat) {
+      // 已在分類內 → 鎖定當前分類，當頁客戶端 AND 過濾，不導頁
+      var items2 = gatherProducts();
+      renderPrettyGrid(items2);
+      refreshSearchBar();
+    } else {
+      // 全部商品 → 用 Shop2000 原生搜尋導頁；多關鍵字之後在 render 階段二次 AND 過濾
+      location.href = '/product?kw=' + encodeURIComponent(v);
+    }
+  }
+  function refreshSearchBar() {
+    var oldBar = document.querySelector('#gp-wrap .gp-search'); if (!oldBar) return;
+    var tmp = document.createElement('div'); tmp.innerHTML = gpSearchBar();
+    var newBar = tmp.querySelector('.gp-search'); if (newBar) oldBar.replaceWith(newBar);
+    var oldTip = document.querySelector('#gp-wrap .gp-kw-tip');
+    if (oldTip) oldTip.remove();
+    var newTip = tmp.querySelector('.gp-kw-tip');
+    if (newTip) document.querySelector('#gp-wrap .gp-search').after(newTip);
   }
   // 漂亮名稱對照(從 GCATS 取已知主/次分類的乾淨名)；新分類沒對照就清理原始名
   var GCAT_NAME = {}, GSUB_NAME = {};
@@ -674,6 +736,12 @@
   }
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
+    items = gpApplyFilter(items);
+    if (!items.length && gpFilter) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;color:#666;font-size:14px;">本分類內找不到符合「' + gpEsc(gpFilter.join(' ')) + '」的商品</div>';
+      gpSyncCount();
+      return;
+    }
     grid.innerHTML = items.map(function (p) {
       var price = p.nt ? ('NT$' + p.nt + '<small> 起</small>') : '<small>詢價</small>';
       var full = p.img.replace(/-(\d+)\.jpg/, '-$1o.jpg');
@@ -704,6 +772,11 @@
   function buildPrettyList() {
     if (document.getElementById('gp-wrap')) return;
     var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
+    // 若 URL 帶 ?kw=，初始化 gpFilter；之後 renderPrettyGrid 會做 AND 過濾（多關鍵字也能精確命中）
+    if (gpFilter === null) {
+      var kwM = location.search.match(/[?&]kw=([^&]*)/);
+      if (kwM) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
+    }
     // 樣式
     if (!document.getElementById('gp-css')) {
       var css = document.createElement('style'); css.id = 'gp-css';
@@ -863,9 +936,19 @@
         setTimeout(gpSyncCount, 1200);
       }
     });
-    // 搜尋：Enter 或按鈕 → 導到 /product?kw=（結果頁皮膚會自動套漂亮格）
+    // 搜尋：Enter 或按鈕 → 在分類內客戶端 AND 過濾；不在分類內走 Shop2000 原生搜尋
     wrap.addEventListener('keydown', function (e) { if (e.target.id === 'gp-kw' && e.key === 'Enter') { e.preventDefault(); gpDoSearch(); } });
-    wrap.addEventListener('click', function (e) { if (e.target.id === 'gp-kw-go') gpDoSearch(); });
+    wrap.addEventListener('click', function (e) {
+      if (e.target.id === 'gp-kw-go') gpDoSearch();
+      else if (e.target.id === 'gp-kw-clear-btn') {
+        e.preventDefault();
+        gpFilter = null;
+        var inp = document.getElementById('gp-kw'); if (inp) inp.value = '';
+        var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
+        if (location.search) location.href = m ? location.pathname : '/product';
+        else { renderPrettyGrid(gatherProducts()); refreshSearchBar(); }
+      }
+    });
     // 手打數字後立刻規格化(失焦/按Enter)
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
