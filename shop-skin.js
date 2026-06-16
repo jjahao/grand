@@ -534,28 +534,38 @@
     return n || '分類';
   }
   // 即時讀官網現有分類選單(藏在頁面裡的 topcls)；後台上/下架→這裡自動同步
+  // 同時記錄每個分類（含只出現在 sub 的父分類）第一次出現的順序，供排序用
   function gpReadLiveCats() {
     var mains = [], mseen = {}, subs = [], sseen = {};
+    var parentSeq = {}, seqIdx = 0; // 記錄每個 mainId 在 DOM 裡的出現順序
     var els = document.querySelectorAll('[onclick]');
     for (var i = 0; i < els.length; i++) {
       var oc = els[i].getAttribute('onclick') || '';
       var m = oc.match(/topcls\(['"](\d+)['"]\s*,\s*['"]([^'"]*)['"]\)/);
       if (!m) continue;
       var main = m[1], sub = m[2], name = (els[i].innerText || els[i].textContent || '').trim();
+      if (parentSeq[main] === undefined) parentSeq[main] = seqIdx++; // 首次出現記順序
       if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
       else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
     }
-    return { mains: mains, subs: subs };
+    return { mains: mains, subs: subs, seq: parentSeq };
   }
   function gpCatNav() {
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '';
     var live = gpReadLiveCats();
-    // 主分類：GCATS 永久分類（有完整名稱和次分類定義）＋ live 裡有但 GCATS 沒有的（批次上架分類），取聯集
+    // 主分類：GCATS 永久分類 ＋ live 裡有但 GCATS 沒有的（批次上架分類），取聯集後依系統順序排序
     var gcatIdSet = {};
     GCATS.forEach(function (c) { gcatIdSet[c.i] = 1; });
     var mains = GCATS.map(function (c) { return { id: c.i, name: c.n }; });
     live.mains.forEach(function (lm) { if (!gcatIdSet[lm.id]) mains.push(lm); });
+    // 依 live.seq（DOM 出現順序 = 後台系統順序）排序；不在 live 裡的排最後（保持 GCATS 相對順序）
+    var fallback = mains.length + 1000;
+    mains.sort(function (a, b) {
+      var sa = (live.seq[a.id] !== undefined) ? live.seq[a.id] : fallback;
+      var sb = (live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback;
+      return sa - sb;
+    });
     var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
     for (var i = 0; i < mains.length; i++) {
       mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
@@ -739,6 +749,13 @@
         '.gp-search #gp-kw-go{height:42px;padding:0 20px;border:0;border-radius:22px;background:#FFD814;color:#0F1111;font-weight:800;font-size:14px;cursor:pointer;flex:0 0 auto}',
         '.gp-search .gp-kw-clear{flex:0 0 auto;width:34px;height:42px;display:flex;align-items:center;justify-content:center;color:#888;text-decoration:none;font-size:16px}',
         '.gp-kw-tip{font-size:13px;color:#565959;padding:2px 2px 0}',
+        /* 電腦版頂部會員列（手機隱藏） */
+        '#gp-topbar{display:none}',
+        '@media(min-width:768px){#gp-topbar{display:flex;align-items:center;gap:0;background:#232F3E;padding:7px 16px;margin:0 -12px 8px}}',
+        '#gp-topbar a{color:#ccc!important;text-decoration:none;font-size:12.5px;padding:0 12px;border-right:1px solid #445;white-space:nowrap}',
+        '#gp-topbar a:last-child{border-right:0}',
+        '#gp-topbar a:hover{color:#FFD814!important}',
+        '#gp-topbar a.tb-home{color:#fff!important;font-weight:700}',
         /* 分類導覽列 */
         '.gc-nav{background:#fff;border-bottom:1px solid #eee;margin:0 -12px}',
         '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}',
@@ -759,7 +776,14 @@
     // 結構
     var mw = document.getElementById('main_width');
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
-    wrap.innerHTML = gpSearchBar() + gpCatNav() + '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
+    wrap.innerHTML =
+      '<div id="gp-topbar">' +
+        '<a class="tb-home" href="https://grand.shop2000.com.tw/">🏠 首頁</a>' +
+        '<a href="' + ORDER + '">📋 查訂單</a>' +
+        '<a href="' + LOGIN + '">👤 會員登入 ／ 加入會員</a>' +
+      '</div>' +
+      gpSearchBar() + gpCatNav() +
+      '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
