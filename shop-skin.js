@@ -517,23 +517,61 @@
     var v = (inp.value || '').trim();
     location.href = v ? ('/product?kw=' + encodeURIComponent(v)) : '/product';
   }
+  // 漂亮名稱對照(從 GCATS 取已知主/次分類的乾淨名)；新分類沒對照就清理原始名
+  var GCAT_NAME = {}, GSUB_NAME = {};
+  (function () {
+    for (var i = 0; i < GCATS.length; i++) {
+      GCAT_NAME[GCATS[i].i] = GCATS[i].n;
+      for (var j = 0; j < GCATS[i].s.length; j++) GSUB_NAME[GCATS[i].s[j][0]] = GCATS[i].s[j][1];
+    }
+  })();
+  function gpCleanCat(id, raw, isSub) {
+    var map = isSub ? GSUB_NAME : GCAT_NAME;
+    if (map[id]) return map[id];
+    var n = (raw || '').replace(/^\s*\d+\/\d+\s*/, '').replace(/_\d{6,}.*$/, '').replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
+    n = n.split(/[ 　]/)[0];
+    if (n.length > 10) n = n.slice(0, 10);
+    return n || '分類';
+  }
+  // 即時讀官網現有分類選單(藏在頁面裡的 topcls)；後台上/下架→這裡自動同步
+  function gpReadLiveCats() {
+    var mains = [], mseen = {}, subs = [], sseen = {};
+    var els = document.querySelectorAll('[onclick]');
+    for (var i = 0; i < els.length; i++) {
+      var oc = els[i].getAttribute('onclick') || '';
+      var m = oc.match(/topcls\(['"](\d+)['"]\s*,\s*['"]([^'"]*)['"]\)/);
+      if (!m) continue;
+      var main = m[1], sub = m[2], name = (els[i].innerText || els[i].textContent || '').trim();
+      if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
+      else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
+    }
+    return { mains: mains, subs: subs };
+  }
   function gpCatNav() {
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
-    var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '', activeCat = null;
+    var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '';
+    var live = gpReadLiveCats();
+    // 主分類：優先用即時讀到的(自動同步)；讀不到才用內建 GCATS 當後備
+    var mains = live.mains.length ? live.mains : GCATS.map(function (c) { return { id: c.i, name: c.n }; });
     var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
-    for (var i = 0; i < GCATS.length; i++) {
-      var c = GCATS[i];
-      mr += '<a class="gc-m' + (c.i === curMain ? ' on' : '') + '" href="/product/' + c.i + '">' + gpEsc(c.n) + '</a>';
-      if (c.i === curMain) activeCat = c;
+    for (var i = 0; i < mains.length; i++) {
+      mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
     }
+    // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS
     var sr = '';
-    if (activeCat && activeCat.s.length) {
-      sr = '<div class="gc-subrow"><a class="gc-s' + (curSub ? '' : ' on') + '" href="/product/' + activeCat.i + '">全部</a>';
-      for (var j = 0; j < activeCat.s.length; j++) {
-        var s = activeCat.s[j];
-        sr += '<a class="gc-s' + (s[0] === curSub ? ' on' : '') + '" href="/product/' + activeCat.i + '/' + s[0] + '">' + gpEsc(s[1]) + (s[2] ? ' <i>' + s[2] + '</i>' : '') + '</a>';
+    if (curMain) {
+      var subList = live.subs.filter(function (s) { return s.main === curMain; });
+      if (!subList.length) {
+        var gc = GCATS.filter(function (c) { return c.i === curMain; })[0];
+        if (gc) subList = gc.s.map(function (s) { return { id: s[0], main: curMain, name: s[1] }; });
       }
-      sr += '</div>';
+      if (subList.length) {
+        sr = '<div class="gc-subrow"><a class="gc-s' + (curSub ? '' : ' on') + '" href="/product/' + curMain + '">全部</a>';
+        for (var j = 0; j < subList.length; j++) {
+          sr += '<a class="gc-s' + (subList[j].id === curSub ? ' on' : '') + '" href="/product/' + curMain + '/' + subList[j].id + '">' + gpEsc(gpCleanCat(subList[j].id, subList[j].name, true)) + '</a>';
+        }
+        sr += '</div>';
+      }
     }
     return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
   }
