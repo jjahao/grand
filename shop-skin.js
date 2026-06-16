@@ -507,6 +507,16 @@
   function gpEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   /* 分類樹（主分類 i=id n=名 s=[次分類id,名,件數]）。topcls 導向 /product/{主}/{次}。 */
   var GCATS=[{"i":"681206","n":"迪士尼","s":[["1541427","11/10新品-米奇雪精靈系列",55],["1541022","11/4新品-冬季系列",41],["1530358","8/28新品-達菲鳥舞落葉系列",38],["1523064","7/3新品-達菲甜甜圈系列",24],["1518357","6/5新品",35],["1518356","6/3新品",12],["1518355","達菲20週年系列",57],["1519704","其他",1187]]},{"i":"714061","n":"好市多現貨","s":[]},{"i":"653720","n":"日本好市多","s":[["1364630","藥品/保健類",304],["1364631","零食類",374],["1364632","食品/酒類",427],["1364633","生活用品類",510],["1364634","衣著類",86],["1364635","美妝用品類",113],["1364636","文具類",34],["1364637","沐浴類",57]]},{"i":"654002","n":"便利商店","s":[["1365721","7-11",772],["1365722","family mart",176],["1365723","lawson",35]]},{"i":"653722","n":"量販店","s":[["1364642","零食類",915],["1364643","調味料",99],["1364644","糖果/巧克力",226],["1364645","其他零嘴小吃",213],["1402772","酒類",2]]},{"i":"653718","n":"MDM批發","s":[["1536504","DHC保健食品",5],["1450733","調味料",6],["1579264","清潔用品",18],["1450734","防蚊防蟲",16],["1450730","食品零食",222],["1450731","美妝・美妝小物",53],["1450729","入浴球",9],["1463220","瑪利歐系列",19],["1464923","OK繃系列",4],["1464918","三麗鷗系列",27],["1464921","寶可夢系列",3],["1463222","吉伊卡哇系列",60],["1463225","星之卡比系列",0],["1464919","森林家族系列",0],["1463226","トミカ玩具車",0],["1463227","麵包超人系列",29],["1463224","盒玩",0],["1450732","其它",182]]},{"i":"653726","n":"日本藥妝","s":[["1364650","日本處方簽專區",53],["1364651","藥品類",229],["1528345","Atomy",14]]},{"i":"713983","n":"茅乃舍","s":[]},{"i":"654004","n":"百貨禮盒","s":[["1375358","小倉山莊",33],["1559106","GRAMERCY NEWYORK",9],["1439404","GOD BLESS BUTTER 神之手",3],["1415451","GALLETE au BEURRE",17],["1415450","NY紐約起司蛋捲",8],["1375359","Tulip Rose",10],["1376695","YOKU MOKU",37],["1375360","Audrey 花束餅乾",19],["1376693","Sugar Butter Tree",15],["1376694","鎌倉五郎(半月)",4],["1376696","GATEAU FESTA HARADA",9],["1376690","東京牛奶起司工廠 Tokyo Milk cheese factory",7],["1415453","AND THE FRIET薯條餅乾",13],["1375362","上野風月堂/東京風月堂/神戶風月堂",42],["1375363","桂新堂",9],["1376847","福砂屋",7],["1394180","東京芭娜娜/迪士尼聯名",28],["1428921","FRANCAJS",7],["1375361","其他品牌",216],["1376697","名古屋蝦餅",3],["1439407","Mary's 巧克力",13],["1439411","Number sugar",5],["1439412","一創堂",6],["1439413","Sable Michelle 周遊世界餅乾罐",25],["1439414","銀座菊廼舎",4],["1439415","銀座西",5],["1439416","東京巧克力工廠",4],["1439450","Press Butter Sand",13],["1439452","PARIS BUTTER CHOCOLAT",7],["1439453","神戶布丁",4],["1439454","BENIYA 松鼠核桃",2],["1439457","CoroCoro waffle cube",4],["1439458","Cream cheese cake",3],["1439487","TOKYO ひよこ",2],["1439488","captain sweets burger",13],["1439495","Tokyo Corne Fleuri玫瑰花巧克力",2],["1439496","Sabrina小花酥餅",16],["1439503","BRULEE MERIZE布蕾",7],["1459558","BUTTER STATE's",10],["1459559","Apple & Butter",3],["1459562","喫茶店",8],["1459564","calbee",23],["1552628","TOKYO RUSK",8],["1552656","Colombin",4],["1571623","RAMEN CLUB 拉麵餅乾",6]]},{"i":"684454","n":"台北現貨","s":[]}];
+  function gpSearchBar() {
+    var m = location.search.match(/[?&]kw=([^&]*)/);
+    var cur = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+    return '<div class="gp-search"><i class="gps-ic">🔍</i><input id="gp-kw" type="search" inputmode="search" placeholder="搜尋商品名稱…" value="' + gpEsc(cur) + '" autocomplete="off"><button id="gp-kw-go" type="button">搜尋</button>' + (cur ? '<a class="gp-kw-clear" href="/product">✕</a>' : '') + '</div>' + (cur ? '<div class="gp-kw-tip">搜尋「' + gpEsc(cur) + '」的結果</div>' : '');
+  }
+  function gpDoSearch() {
+    var inp = document.getElementById('gp-kw'); if (!inp) return;
+    var v = (inp.value || '').trim();
+    location.href = v ? ('/product?kw=' + encodeURIComponent(v)) : '/product';
+  }
   function gpCatNav() {
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '', activeCat = null;
@@ -680,6 +690,14 @@
         '#gp-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111;font-weight:800;font-size:15px;padding:13px 26px;border-radius:28px;box-shadow:0 8px 24px rgba(0,0,0,.28);border:0;cursor:pointer;display:flex;gap:10px;align-items:center}',
         '#gp-bar .c{background:#B12704;color:#fff;border-radius:20px;padding:2px 10px;font-size:13px}',
         '#gp-lb{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}#gp-lb img{max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:8px}',
+        /* 搜尋列 */
+        '.gp-search{display:flex;align-items:center;gap:8px;padding:10px 0 6px;position:relative}',
+        '.gp-search .gps-ic{position:absolute;left:12px;font-size:15px;font-style:normal;pointer-events:none}',
+        '.gp-search input{flex:1;height:42px;border:1px solid #d5d9d9;border-radius:22px;padding:0 14px 0 36px;font-size:15px;outline:none;background:#fff;color:#0F1111}',
+        '.gp-search input:focus{border-color:#FFB100;box-shadow:0 0 0 3px rgba(255,200,0,.18)}',
+        '.gp-search #gp-kw-go{height:42px;padding:0 20px;border:0;border-radius:22px;background:#FFD814;color:#0F1111;font-weight:800;font-size:14px;cursor:pointer;flex:0 0 auto}',
+        '.gp-search .gp-kw-clear{flex:0 0 auto;width:34px;height:42px;display:flex;align-items:center;justify-content:center;color:#888;text-decoration:none;font-size:16px}',
+        '.gp-kw-tip{font-size:13px;color:#565959;padding:2px 2px 0}',
         /* 分類導覽列 */
         '.gc-nav{background:#fff;border-bottom:1px solid #eee;margin:0 -12px}',
         '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}',
@@ -700,7 +718,7 @@
     // 結構
     var mw = document.getElementById('main_width');
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
-    wrap.innerHTML = gpCatNav() + '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
+    wrap.innerHTML = gpSearchBar() + gpCatNav() + '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
@@ -788,6 +806,9 @@
         setTimeout(gpSyncCount, 1200);
       }
     });
+    // 搜尋：Enter 或按鈕 → 導到 /product?kw=（結果頁皮膚會自動套漂亮格）
+    wrap.addEventListener('keydown', function (e) { if (e.target.id === 'gp-kw' && e.key === 'Enter') { e.preventDefault(); gpDoSearch(); } });
+    wrap.addEventListener('click', function (e) { if (e.target.id === 'gp-kw-go') gpDoSearch(); });
     // 手打數字後立刻規格化(失焦/按Enter)
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
