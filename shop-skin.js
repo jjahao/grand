@@ -120,6 +120,13 @@
     var css = document.createElement('style');
     css.id = 'grand-skin-css';
     css.textContent = [
+      /* 商品頁頂部會員列（全域，獨立於 buildPrettyList；電腦版顯示、手機隱藏因首頁已有 gh-mbar） */
+      '#gp-topbar{display:none}',
+      '@media(min-width:768px){#gp-topbar{display:flex!important;align-items:center;gap:0;background:#232F3E;padding:8px 18px;margin:0 0 8px;position:relative;z-index:100;max-width:1000px;margin-left:auto;margin-right:auto}}',
+      '#gp-topbar a{color:#ddd!important;text-decoration:none;font-size:13px;padding:2px 14px;border-right:1px solid #445;white-space:nowrap}',
+      '#gp-topbar a:last-child{border-right:0}',
+      '#gp-topbar a:hover{color:#FFD814!important}',
+      '#gp-topbar a.tb-home{color:#fff!important;font-weight:700}',
       /* ---- 配色（暖白安心底 + 珊瑚橙催單 + 綠信任 + 金精緻；更亮更喜悅） ---- */
       ':root{--bg:#FFF7EF;--ink:#2B201A;--ink2:#8A7A6C;--buy:#FF5B2E;--buy2:#FF8A5B;--line:#06C755;--gold:#CDA349;--card:#fff;--hair:#F1E7D9;--wine:#2E1C24}',
       'body,td,th,select,input,textarea,button,a{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif!important}',
@@ -746,13 +753,6 @@
         '.gp-search #gp-kw-go{height:42px;padding:0 20px;border:0;border-radius:22px;background:#FFD814;color:#0F1111;font-weight:800;font-size:14px;cursor:pointer;flex:0 0 auto}',
         '.gp-search .gp-kw-clear{flex:0 0 auto;width:34px;height:42px;display:flex;align-items:center;justify-content:center;color:#888;text-decoration:none;font-size:16px}',
         '.gp-kw-tip{font-size:13px;color:#565959;padding:2px 2px 0}',
-        /* 電腦版頂部會員列（手機隱藏） */
-        '#gp-topbar{display:none}',
-        '@media(min-width:768px){#gp-topbar{display:flex;align-items:center;gap:0;background:#232F3E;padding:7px 16px;margin:0 -12px 8px}}',
-        '#gp-topbar a{color:#ccc!important;text-decoration:none;font-size:12.5px;padding:0 12px;border-right:1px solid #445;white-space:nowrap}',
-        '#gp-topbar a:last-child{border-right:0}',
-        '#gp-topbar a:hover{color:#FFD814!important}',
-        '#gp-topbar a.tb-home{color:#fff!important;font-weight:700}',
         /* 分類導覽列 */
         '.gc-nav{background:#fff;border-bottom:1px solid #eee;margin:0 -12px}',
         '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}',
@@ -774,11 +774,6 @@
     var mw = document.getElementById('main_width');
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
-      '<div id="gp-topbar">' +
-        '<a class="tb-home" href="https://grand.shop2000.com.tw/">🏠 首頁</a>' +
-        '<a href="' + ORDER + '">📋 查訂單</a>' +
-        '<a href="' + LOGIN + '">👤 會員登入 ／ 加入會員</a>' +
-      '</div>' +
       gpSearchBar() + gpCatNav() +
       '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
@@ -899,13 +894,27 @@
     }, 500);
   }
 
+  // 商品頁通用頂部會員列：未登入也能看到首頁/查訂單/會員登入入口（不依賴有沒有商品）
+  function buildProductTopbar() {
+    if (document.getElementById('gp-topbar')) return;
+    var mw = document.getElementById('main_width');
+    if (!mw || !mw.parentNode) return;
+    var bar = document.createElement('div');
+    bar.id = 'gp-topbar';
+    bar.innerHTML =
+      '<a class="tb-home" href="https://grand.shop2000.com.tw/">🏠 首頁</a>' +
+      '<a href="' + ORDER + '">📋 查訂單</a>' +
+      '<a href="' + LOGIN + '">👤 會員登入 ／ 加入會員</a>';
+    mw.parentNode.insertBefore(bar, mw);
+  }
+
   function run() {
     ensureViewport();
     // 店長已登入 → 皮膚讓位，直接用舊系統管理（含工具列較晚載入，下方再輪詢補偵測）
     if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    else if (isProductListPage()) tryPrettyList();
+    else if (isProductListPage()) { buildProductTopbar(); tryPrettyList(); }
     else buildMemberPanel();
     buildAdminEntry();
     fixCart();
