@@ -526,11 +526,8 @@
     }
   })();
   function gpCleanCat(id, raw, isSub) {
-    var map = isSub ? GSUB_NAME : GCAT_NAME;
-    if (map[id]) return map[id];
-    var n = (raw || '').replace(/^\s*\d+\/\d+\s*/, '').replace(/_\d{6,}.*$/, '').replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
-    n = n.split(/[ 　]/)[0];
-    if (n.length > 10) n = n.slice(0, 10);
+    // James 規則：皮膚目錄名稱必須跟系統本頁一致——只去掉尾端商品計數（…2016/...1010），其餘原樣。
+    var n = (raw || '').replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
     return n || '分類';
   }
   // 即時讀官網現有分類選單(藏在頁面裡的 topcls)；後台上/下架→這裡自動同步
