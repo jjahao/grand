@@ -551,8 +551,11 @@
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '';
     var live = gpReadLiveCats();
-    // 主分類：優先用即時讀到的(自動同步)；讀不到才用內建 GCATS 當後備
-    var mains = live.mains.length ? live.mains : GCATS.map(function (c) { return { id: c.i, name: c.n }; });
+    // 主分類：GCATS 永久分類（有完整名稱和次分類定義）＋ live 裡有但 GCATS 沒有的（批次上架分類），取聯集
+    var gcatIdSet = {};
+    GCATS.forEach(function (c) { gcatIdSet[c.i] = 1; });
+    var mains = GCATS.map(function (c) { return { id: c.i, name: c.n }; });
+    live.mains.forEach(function (lm) { if (!gcatIdSet[lm.id]) mains.push(lm); });
     var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
     for (var i = 0; i < mains.length; i++) {
       mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
