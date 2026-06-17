@@ -607,42 +607,44 @@
   // 額外讀「虛擬分頁」：左側 sidebar 內非 topcls、卻指向商品清單的 a（例：爆款下單區🔥）
   function gpReadLiveCats() {
     var mains = [], mseen = {}, subs = [], sseen = {};
-    var parentSeq = {}, seqIdx = 0; // 記錄每個 mainId 在 DOM 裡的出現順序
+    var parentSeq = {}, seqIdx = 0; // 共享計數：sidebar 內所有「分類項目」依 DOM 順序遞增（含虛擬分頁）
     var virtual = [], vseen = {};
+    // 一次掃描所有有 onclick 的元素，按 DOM 順序處理（讓虛擬分頁與主分類共享 seq，可一起排序）
     var els = document.querySelectorAll('[onclick]');
     for (var i = 0; i < els.length; i++) {
-      var oc = els[i].getAttribute('onclick') || '';
-      var m = oc.match(/topcls\(['"](\d+)['"]\s*,\s*['"]([^'"]*)['"]\)/);
-      if (!m) continue;
-      var main = m[1], sub = m[2], name = (els[i].innerText || els[i].textContent || '').trim();
-      if (parentSeq[main] === undefined) parentSeq[main] = seqIdx++; // 首次出現記順序
-      if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
-      else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
-    }
-    // 虛擬分頁（爆款下單區🔥 等）：Shop2000 用 <div class="pcls1" id="{vid}" onclick="show_saving();location.href='/home/{vid}'">
-    // 嚴格只認 onclick 內含 /home/ 的 pcls1（其他 pcls1 可能是分類容器，innerText 會把整段子分類串起，須排除）
-    var pclsEls = document.querySelectorAll('.pcls1, .pcls2, .pcls3');
-    for (var p = 0; p < pclsEls.length; p++) {
-      var pel = pclsEls[p];
-      var pOc = pel.getAttribute('onclick') || '';
-      var pLm = pOc.match(/location(?:\.href)?\s*=\s*['"](\/home\/[\w\-]+)['"]/);
-      if (!pLm) continue; // 不是 /home/{id} 直連 → 不是虛擬分頁，略過
-      var pHref = pLm[1];
-      if (vseen[pHref]) continue;
-      // 名稱：優先用直接子文字節點（避免把子分類串接進來）；若無，取 firstElementChild 文字
-      var nm = '';
-      for (var c = 0; c < pel.childNodes.length; c++) {
-        var ch = pel.childNodes[c];
-        if (ch.nodeType === 3) { var t = (ch.nodeValue || '').trim(); if (t) { nm = t; break; } }
+      var el = els[i];
+      var oc = el.getAttribute('onclick') || '';
+      // ① topcls 主/次分類
+      var tc = oc.match(/topcls\(['"](\d+)['"]\s*,\s*['"]([^'"]*)['"]\)/);
+      if (tc) {
+        var main = tc[1], sub = tc[2], name = (el.innerText || el.textContent || '').trim();
+        if (parentSeq[main] === undefined) parentSeq[main] = seqIdx++;
+        if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
+        else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
+        continue;
       }
-      if (!nm) {
-        var fec = pel.firstElementChild;
-        if (fec) nm = (fec.innerText || fec.textContent || '').trim();
+      // ② 虛擬分頁：<div class="pcls1/2/3" onclick="show_saving();location.href='/home/{vid}'">
+      var cls = el.className || '';
+      if (typeof cls === 'string' && /\bpcls[123]\b/.test(cls)) {
+        var pLm = oc.match(/location(?:\.href)?\s*=\s*['"](\/home\/[\w\-]+)['"]/);
+        if (!pLm) continue;
+        var pHref = pLm[1];
+        if (vseen[pHref]) continue;
+        // 取直接子文字節點，避免把子分類串接進來
+        var nm = '';
+        for (var c = 0; c < el.childNodes.length; c++) {
+          var ch = el.childNodes[c];
+          if (ch.nodeType === 3) { var t = (ch.nodeValue || '').trim(); if (t) { nm = t; break; } }
+        }
+        if (!nm) {
+          var fec = el.firstElementChild;
+          if (fec) nm = (fec.innerText || fec.textContent || '').trim();
+        }
+        nm = nm.replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
+        if (!nm || nm.length < 2) continue;
+        vseen[pHref] = 1;
+        virtual.push({ href: pHref, name: nm, onclick: oc, seq: seqIdx++ });
       }
-      nm = nm.replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
-      if (!nm || nm.length < 2) continue;
-      vseen[pHref] = 1;
-      virtual.push({ href: pHref, name: nm, onclick: pOc });
     }
     try { if (virtual.length) console.log('[grand-skin] 虛擬分頁:', virtual); } catch (_) {}
     return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
@@ -651,31 +653,30 @@
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '';
     var live = gpReadLiveCats();
-    // 主分類：GCATS 永久分類 ＋ live 裡有但 GCATS 沒有的（批次上架分類），取聯集後依系統順序排序
+    // 把主分類 + 虛擬分頁合在同一個 items 陣列，用共享 seq 一起排序（虛擬分頁照系統 sidebar 順序自動排第一）
     var gcatIdSet = {};
     GCATS.forEach(function (c) { gcatIdSet[c.i] = 1; });
-    var mains = GCATS.map(function (c) { return { id: c.i, name: c.n }; });
-    live.mains.forEach(function (lm) { if (!gcatIdSet[lm.id]) mains.push(lm); });
-    // 依 live.seq（DOM 出現順序 = 後台系統順序）排序；不在 live 裡的排最後（保持 GCATS 相對順序）
-    var fallback = mains.length + 1000;
-    mains.sort(function (a, b) {
-      var sa = (live.seq[a.id] !== undefined) ? live.seq[a.id] : fallback;
-      var sb = (live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback;
+    var items = [];
+    GCATS.forEach(function (c) { items.push({ kind: 'main', id: c.i, name: c.n }); });
+    live.mains.forEach(function (lm) { if (!gcatIdSet[lm.id]) items.push({ kind: 'main', id: lm.id, name: lm.name }); });
+    live.virtual.forEach(function (v) { items.push({ kind: 'virtual', href: v.href, name: v.name, onclick: v.onclick, seq: v.seq }); });
+    var fallback = items.length + 1000;
+    items.sort(function (a, b) {
+      var sa = (a.kind === 'virtual') ? a.seq : ((live.seq[a.id] !== undefined) ? live.seq[a.id] : fallback);
+      var sb = (b.kind === 'virtual') ? b.seq : ((live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback);
       return sa - sb;
     });
     var curPath = location.pathname + location.search;
     var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
-    for (var i = 0; i < mains.length; i++) {
-      mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
-    }
-    // 虛擬分頁（爆款下單區🔥 等）：保留原 onclick（show_saving 是 Shop2000 必要前置邏輯，否則點下去沒反應）
-    if (live.virtual && live.virtual.length) {
-      for (var v = 0; v < live.virtual.length; v++) {
-        var vh = live.virtual[v].href;
-        var voc = live.virtual[v].onclick || '';
-        var isOn = (curPath === vh) || (curPath.indexOf(vh) === 0 && vh.length > 8);
-        mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(vh) + '"' +
-              (voc ? ' onclick="' + gpEsc(voc) + ';return false;"' : '') + '>' + gpEsc(live.virtual[v].name) + '</a>';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.kind === 'virtual') {
+        var isOn = (curPath === it.href) || (curPath.indexOf(it.href) === 0 && it.href.length > 8);
+        var voc = it.onclick || '';
+        mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(it.href) + '"' +
+              (voc ? ' onclick="' + gpEsc(voc) + ';return false;"' : '') + '>' + gpEsc(it.name) + '</a>';
+      } else {
+        mr += '<a class="gc-m' + (it.id === curMain ? ' on' : '') + '" href="/product/' + it.id + '">' + gpEsc(gpCleanCat(it.id, it.name, false)) + '</a>';
       }
     }
     // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS
@@ -696,35 +697,31 @@
     }
     return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
   }
-  // Windows 桌面瀏覽器無觸控滑 → 加滑鼠拖曳橫向滾動（pointer events 統一處理滑鼠/觸控板/觸控）
+  // Windows 桌面瀏覽器無觸控滑 → 加「滑鼠」拖曳橫向滾動
+  // 重點：不用 setPointerCapture（會搶走子元素 click）；touch 完全不接管（原生橫滑沒問題）；
+  //      mouseup 時若拖超過 5px，才用 capture+once 攔下一次 click 避免誤觸。
   function attachDragScroll(el) {
     if (!el || el.__gcDragBound) return; el.__gcDragBound = 1;
     var isDown = false, startX = 0, startScroll = 0, moved = 0;
-    el.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0 && e.pointerType === 'mouse') return; // 只接左鍵
+    el.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
       isDown = true; startX = e.clientX; startScroll = el.scrollLeft; moved = 0;
-      try { el.setPointerCapture(e.pointerId); } catch (_) {}
     });
-    el.addEventListener('pointermove', function (e) {
+    document.addEventListener('mousemove', function (e) {
       if (!isDown) return;
       var dx = e.clientX - startX;
-      if (!el.classList.contains('gc-dragging') && Math.abs(dx) > 4) el.classList.add('gc-dragging');
-      el.scrollLeft = startScroll - dx;
       moved = Math.max(moved, Math.abs(dx));
+      if (moved > 3) el.scrollLeft = startScroll - dx;
     });
-    function stop(e) {
+    document.addEventListener('mouseup', function () {
       if (!isDown) return; isDown = false;
-      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
       if (moved > 5) {
-        // 阻擋本次拖曳結束的 click（不要誤觸分類連結）
         var blocker = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
-        el.addEventListener('click', blocker, { capture: true, once: true });
+        el.addEventListener('click', blocker, true);
+        setTimeout(function () { el.removeEventListener('click', blocker, true); }, 50);
       }
-      setTimeout(function () { el.classList.remove('gc-dragging'); }, 0);
-    }
-    el.addEventListener('pointerup', stop);
-    el.addEventListener('pointercancel', stop);
-    // 滾輪垂直 → 橫向滾（順手體驗，桌面無觸控板的 user 用得到）
+    });
+    // 滾輪垂直 → 橫向滾
     el.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         el.scrollLeft += e.deltaY; e.preventDefault();
@@ -906,8 +903,6 @@
         /* 分類導覽列 */
         '.gc-nav{background:#fff;border-bottom:1px solid #eee;margin:0 -12px}',
         '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch;cursor:grab;user-select:none;-webkit-user-select:none;scroll-behavior:auto}',
-        '.gc-mainrow.gc-dragging,.gc-subrow.gc-dragging{cursor:grabbing}',
-        '.gc-mainrow.gc-dragging a,.gc-subrow.gc-dragging a{pointer-events:none}',
         '.gc-mainrow::-webkit-scrollbar,.gc-subrow::-webkit-scrollbar{height:0}',
         '.gc-m{flex:0 0 auto;padding:8px 15px;border-radius:20px;background:#f1f3f3;color:#0F1111!important;text-decoration:none;font-size:13.5px;font-weight:800;white-space:nowrap}',
         '.gc-m.on{background:#232F3E;color:#fff!important}',
