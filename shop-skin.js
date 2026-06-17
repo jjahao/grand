@@ -507,9 +507,12 @@
 
   /* ===== 商品列表頁：Amazon JP 風格漂亮格 + 直接選購（接官網原生購物車） ===== */
   function isProductListPage() {
-    if (!/\/product(\/|$)/.test(location.pathname)) return false; // 在 /product 下
-    if (/\/product\/p\d+/.test(location.pathname)) return false;  // 排除單一商品內頁
-    return true;
+    var p = location.pathname;
+    if (/\/product\/p\d+/.test(p)) return false;  // 排除單一商品內頁
+    // 一般分類：/product...；虛擬分頁：/home/{vid}（爆款下單區等聚合頁）
+    if (/\/product(\/|$)/.test(p)) return true;
+    if (/^\/home\/[\w-]+/.test(p)) return true;
+    return false;
   }
   function gpEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   /* 分類樹（主分類 i=id n=名 s=[次分類id,名,件數]）。topcls 導向 /product/{主}/{次}。 */
@@ -616,20 +619,30 @@
       if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
       else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
     }
-    // 虛擬分頁（爆款下單區🔥 等）：Shop2000 用 <div class="pcls1" id="{vid}" onclick="...location.href='/home/{vid}'...">
+    // 虛擬分頁（爆款下單區🔥 等）：Shop2000 用 <div class="pcls1" id="{vid}" onclick="show_saving();location.href='/home/{vid}'">
+    // 嚴格只認 onclick 內含 /home/ 的 pcls1（其他 pcls1 可能是分類容器，innerText 會把整段子分類串起，須排除）
     var pclsEls = document.querySelectorAll('.pcls1, .pcls2, .pcls3');
     for (var p = 0; p < pclsEls.length; p++) {
       var pel = pclsEls[p];
-      var pid = pel.id || '';
-      var nm = (pel.innerText || pel.textContent || '').trim().replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
-      if (!nm || nm.length < 2) continue;
-      // URL 從 onclick 提取，抓不到就用 /home/{id}
       var pOc = pel.getAttribute('onclick') || '';
-      var pLm = pOc.match(/location(?:\.href)?\s*=\s*['"]([^'"]+)['"]/);
-      var pHref = pLm ? pLm[1] : (pid ? '/home/' + pid : '');
-      if (!pHref || vseen[pHref]) continue;
+      var pLm = pOc.match(/location(?:\.href)?\s*=\s*['"](\/home\/[\w\-]+)['"]/);
+      if (!pLm) continue; // 不是 /home/{id} 直連 → 不是虛擬分頁，略過
+      var pHref = pLm[1];
+      if (vseen[pHref]) continue;
+      // 名稱：優先用直接子文字節點（避免把子分類串接進來）；若無，取 firstElementChild 文字
+      var nm = '';
+      for (var c = 0; c < pel.childNodes.length; c++) {
+        var ch = pel.childNodes[c];
+        if (ch.nodeType === 3) { var t = (ch.nodeValue || '').trim(); if (t) { nm = t; break; } }
+      }
+      if (!nm) {
+        var fec = pel.firstElementChild;
+        if (fec) nm = (fec.innerText || fec.textContent || '').trim();
+      }
+      nm = nm.replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
+      if (!nm || nm.length < 2) continue;
       vseen[pHref] = 1;
-      virtual.push({ href: pHref, name: nm });
+      virtual.push({ href: pHref, name: nm, onclick: pOc });
     }
     try { if (virtual.length) console.log('[grand-skin] 虛擬分頁:', virtual); } catch (_) {}
     return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
@@ -655,12 +668,14 @@
     for (var i = 0; i < mains.length; i++) {
       mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
     }
-    // 虛擬分頁（爆款下單區🔥 等）：URL 直接用 sidebar 原始 href，內容是 Shop2000 自己組（拉其他商品）
+    // 虛擬分頁（爆款下單區🔥 等）：保留原 onclick（show_saving 是 Shop2000 必要前置邏輯，否則點下去沒反應）
     if (live.virtual && live.virtual.length) {
       for (var v = 0; v < live.virtual.length; v++) {
         var vh = live.virtual[v].href;
+        var voc = live.virtual[v].onclick || '';
         var isOn = (curPath === vh) || (curPath.indexOf(vh) === 0 && vh.length > 8);
-        mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(vh) + '">' + gpEsc(live.virtual[v].name) + '</a>';
+        mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(vh) + '"' +
+              (voc ? ' onclick="' + gpEsc(voc) + ';return false;"' : '') + '>' + gpEsc(live.virtual[v].name) + '</a>';
       }
     }
     // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS
