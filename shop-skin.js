@@ -601,9 +601,11 @@
   }
   // 即時讀官網現有分類選單(藏在頁面裡的 topcls)；後台上/下架→這裡自動同步
   // 同時記錄每個分類（含只出現在 sub 的父分類）第一次出現的順序，供排序用
+  // 額外讀「虛擬分頁」：左側 sidebar 內非 topcls、卻指向商品清單的 a（例：爆款下單區🔥）
   function gpReadLiveCats() {
     var mains = [], mseen = {}, subs = [], sseen = {};
     var parentSeq = {}, seqIdx = 0; // 記錄每個 mainId 在 DOM 裡的出現順序
+    var virtual = [], vseen = {};
     var els = document.querySelectorAll('[onclick]');
     for (var i = 0; i < els.length; i++) {
       var oc = els[i].getAttribute('onclick') || '';
@@ -614,7 +616,27 @@
       if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
       else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
     }
-    return { mains: mains, subs: subs, seq: parentSeq };
+    // 讀虛擬分頁：scan 左側分類欄（被皮膚 CSS 隱藏但 DOM 還在）的 a 連結
+    var sidebar = document.querySelector('.left_td') || document.querySelector('[id*="cls"]') || document.body;
+    var aTags = sidebar.querySelectorAll('a[href]');
+    for (var k = 0; k < aTags.length; k++) {
+      var a = aTags[k];
+      if (a.getAttribute('onclick')) continue; // topcls 已處理
+      var href = a.getAttribute('href') || '';
+      // 只認指向商品清單的 href：/product 路徑、或 ?xx= 過濾參數，不含 /p{psn} 單品頁
+      if (!/^(\/product|\/\?|\?)/.test(href)) continue;
+      if (/\/product\/p\d+/.test(href)) continue;
+      // 跳過 "所有商品 /product" 這種重複入口
+      if (href === '/product' || href === '/product/' || href === '/') continue;
+      var nm = (a.innerText || a.textContent || '').trim().replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
+      if (!nm) continue;
+      // 已存在於 topcls 體系的不重複加（避免 /product/{id} 被誤判為虛擬）
+      var idM = href.match(/\/product\/(\d+)/);
+      if (idM && mseen[idM[1]]) continue;
+      if (vseen[href]) continue; vseen[href] = 1;
+      virtual.push({ href: href, name: nm, seq: 10000 + virtual.length });
+    }
+    return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
   }
   function gpCatNav() {
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
@@ -632,9 +654,18 @@
       var sb = (live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback;
       return sa - sb;
     });
+    var curPath = location.pathname + location.search;
     var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
     for (var i = 0; i < mains.length; i++) {
       mr += '<a class="gc-m' + (mains[i].id === curMain ? ' on' : '') + '" href="/product/' + mains[i].id + '">' + gpEsc(gpCleanCat(mains[i].id, mains[i].name, false)) + '</a>';
+    }
+    // 虛擬分頁（爆款下單區🔥 等）：URL 直接用 sidebar 原始 href，內容是 Shop2000 自己組（拉其他商品）
+    if (live.virtual && live.virtual.length) {
+      for (var v = 0; v < live.virtual.length; v++) {
+        var vh = live.virtual[v].href;
+        var isOn = (curPath === vh) || (curPath.indexOf(vh) === 0 && vh.length > 8);
+        mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(vh) + '">' + gpEsc(live.virtual[v].name) + '</a>';
+      }
     }
     // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS
     var sr = '';
@@ -869,6 +900,8 @@
         '.gc-mainrow::-webkit-scrollbar,.gc-subrow::-webkit-scrollbar{height:0}',
         '.gc-m{flex:0 0 auto;padding:8px 15px;border-radius:20px;background:#f1f3f3;color:#0F1111!important;text-decoration:none;font-size:13.5px;font-weight:800;white-space:nowrap}',
         '.gc-m.on{background:#232F3E;color:#fff!important}',
+        '.gc-m.gc-virtual{background:#FFF4E0;color:#B12704!important;border:1px dashed #FFB100}',
+        '.gc-m.gc-virtual.on{background:#B12704;color:#fff!important;border-color:#B12704}',
         '.gc-subrow{border-top:1px solid #f3f3f3;background:#FAFAFA;padding-top:8px;padding-bottom:8px}',
         '.gc-s{flex:0 0 auto;padding:6px 12px;border-radius:16px;background:#fff;border:1px solid #e3e6e6;color:#565959!important;text-decoration:none;font-size:12.5px;white-space:nowrap}',
         '.gc-s.on{background:#FFD814;color:#0F1111!important;border-color:#FFD814;font-weight:700}',
