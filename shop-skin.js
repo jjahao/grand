@@ -654,6 +654,41 @@
     }
     return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
   }
+  // Windows 桌面瀏覽器無觸控滑 → 加滑鼠拖曳橫向滾動（pointer events 統一處理滑鼠/觸控板/觸控）
+  function attachDragScroll(el) {
+    if (!el || el.__gcDragBound) return; el.__gcDragBound = 1;
+    var isDown = false, startX = 0, startScroll = 0, moved = 0;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 && e.pointerType === 'mouse') return; // 只接左鍵
+      isDown = true; startX = e.clientX; startScroll = el.scrollLeft; moved = 0;
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!isDown) return;
+      var dx = e.clientX - startX;
+      if (!el.classList.contains('gc-dragging') && Math.abs(dx) > 4) el.classList.add('gc-dragging');
+      el.scrollLeft = startScroll - dx;
+      moved = Math.max(moved, Math.abs(dx));
+    });
+    function stop(e) {
+      if (!isDown) return; isDown = false;
+      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (moved > 5) {
+        // 阻擋本次拖曳結束的 click（不要誤觸分類連結）
+        var blocker = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
+        el.addEventListener('click', blocker, { capture: true, once: true });
+      }
+      setTimeout(function () { el.classList.remove('gc-dragging'); }, 0);
+    }
+    el.addEventListener('pointerup', stop);
+    el.addEventListener('pointercancel', stop);
+    // 滾輪垂直 → 橫向滾（順手體驗，桌面無觸控板的 user 用得到）
+    el.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        el.scrollLeft += e.deltaY; e.preventDefault();
+      }
+    }, { passive: false });
+  }
   function gatherProducts() {
     // 只抓 #plist_tb（真正的分類/全部商品清單）；plist_tb{數字} 是固定推薦區，排除。
     var root = document.getElementById('plist_tb') || document;
@@ -828,7 +863,9 @@
         '.gp-kw-tip{font-size:13px;color:#565959;padding:2px 2px 0}',
         /* 分類導覽列 */
         '.gc-nav{background:#fff;border-bottom:1px solid #eee;margin:0 -12px}',
-        '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch}',
+        '.gc-mainrow,.gc-subrow{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch;cursor:grab;user-select:none;-webkit-user-select:none;scroll-behavior:auto}',
+        '.gc-mainrow.gc-dragging,.gc-subrow.gc-dragging{cursor:grabbing}',
+        '.gc-mainrow.gc-dragging a,.gc-subrow.gc-dragging a{pointer-events:none}',
         '.gc-mainrow::-webkit-scrollbar,.gc-subrow::-webkit-scrollbar{height:0}',
         '.gc-m{flex:0 0 auto;padding:8px 15px;border-radius:20px;background:#f1f3f3;color:#0F1111!important;text-decoration:none;font-size:13.5px;font-weight:800;white-space:nowrap}',
         '.gc-m.on{background:#232F3E;color:#fff!important}',
@@ -953,6 +990,8 @@
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
     renderPrettyGrid(items);
+    // 桌面拖曳橫向滾動分類列（Windows 無觸控滑修補）
+    [].forEach.call(wrap.querySelectorAll('.gc-mainrow, .gc-subrow'), attachDragScroll);
     setInterval(gpSyncCount, 1500);
     // 不再做卡片預抓/捲動補抓（被 Shop2000 速率限制擋住）；brief 改為使用者按 +/- 或加入時順手抓單筆
     // #plist_tb(真正商品清單)常晚於推薦區載入/換頁也會換 → 觀察整個 #main_width，
