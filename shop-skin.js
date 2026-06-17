@@ -646,6 +646,16 @@
         virtual.push({ href: pHref, name: nm, onclick: oc, seq: seqIdx++ });
       }
     }
+    // 跨頁快取：虛擬分頁頁(/home/{id})的 sidebar 結構不同，常讀不到 .pcls1 → 按鍵會消失讓人恐慌。
+    // 讀到就寫快取；這次讀不到就用上次快取還原，保證分類列按鍵跨頁穩定不閃失。
+    try {
+      if (virtual.length) {
+        sessionStorage.setItem('grand_virtual_cats', JSON.stringify(virtual));
+      } else {
+        var cached = sessionStorage.getItem('grand_virtual_cats');
+        if (cached) virtual = JSON.parse(cached);
+      }
+    } catch (_) {}
     try { if (virtual.length) console.log('[grand-skin] 虛擬分頁:', virtual); } catch (_) {}
     return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
   }
