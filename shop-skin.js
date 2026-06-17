@@ -529,7 +529,19 @@
       return gpFilter.every(function (t) { return n.indexOf(t) >= 0; });
     });
   }
+  // 使用者「目前停在哪個虛擬分頁」的記號（點爆款時寫入，點正規分類時清除）。
+  // 因為 /home/{id} 爆款頁落地後網址常變成來源分類(超商)的 /product 頁，
+  // 單看網址會誤把來源分類標成選中 → 用這旗標還原「我在爆款」的狀態。
+  function gpActiveVirtual() {
+    try { return sessionStorage.getItem('grand_virtual_active') || ''; } catch (_) { return ''; }
+  }
   function gpCurCatLabel() {
+    // 若停在虛擬分頁 → 顯示虛擬分頁名（搜尋提示用）
+    var av = gpActiveVirtual();
+    if (av) {
+      var vc = (gpReadLiveCats().virtual || []).filter(function (v) { return v.href === av; })[0];
+      if (vc) return vc.name;
+    }
     // 當前分類顯示名（給搜尋提示用）
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     if (!m) return '';
@@ -677,21 +689,34 @@
       return sa - sb;
     });
     var curPath = location.pathname + location.search;
-    var mr = '<a class="gc-m' + (curMain ? '' : ' on') + '" href="/product">全部</a>';
+    // 是否停在某個虛擬分頁：URL 直接是 /home/，或 sessionStorage 旗標記著（爆款頁落地變成來源分類 URL 時靠它）
+    var activeVirtual = gpActiveVirtual();
+    var onVirtual = false;
+    for (var vi = 0; vi < items.length; vi++) {
+      if (items[vi].kind === 'virtual') {
+        var vh0 = items[vi].href;
+        if (curPath === vh0 || (curPath.indexOf(vh0) === 0 && vh0.length > 8) || activeVirtual === vh0) { onVirtual = true; break; }
+      }
+    }
+    // 停在虛擬分頁時，「全部」與主分類都不標選中（避免來源分類被誤標），只標亮該虛擬分頁
+    var mr = '<a class="gc-m' + ((!curMain && !onVirtual) ? ' on' : '') + '" href="/product" onclick="try{sessionStorage.removeItem(\'grand_virtual_active\')}catch(e){}">全部</a>';
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       if (it.kind === 'virtual') {
-        var isOn = (curPath === it.href) || (curPath.indexOf(it.href) === 0 && it.href.length > 8);
+        var isOn = onVirtual && ((curPath === it.href) || (curPath.indexOf(it.href) === 0 && it.href.length > 8) || activeVirtual === it.href);
         var voc = it.onclick || '';
+        // 點虛擬分頁 → 先記旗標（落地後即使網址變成來源分類也能還原標亮），再跑原 onclick 導頁
+        var setFlag = "try{sessionStorage.setItem('grand_virtual_active','" + it.href + "')}catch(e){}";
         mr += '<a class="gc-m gc-virtual' + (isOn ? ' on' : '') + '" href="' + gpEsc(it.href) + '"' +
-              (voc ? ' onclick="' + gpEsc(voc) + ';return false;"' : '') + '>' + gpEsc(it.name) + '</a>';
+              ' onclick="' + gpEsc(setFlag + ';' + (voc || ("location.href='" + it.href + "'")) + ';return false;') + '">' + gpEsc(it.name) + '</a>';
       } else {
-        mr += '<a class="gc-m' + (it.id === curMain ? ' on' : '') + '" href="/product/' + it.id + '">' + gpEsc(gpCleanCat(it.id, it.name, false)) + '</a>';
+        // 點正規分類 → 清除虛擬旗標，讓導頁正常進行
+        mr += '<a class="gc-m' + ((it.id === curMain && !onVirtual) ? ' on' : '') + '" href="/product/' + it.id + '" onclick="try{sessionStorage.removeItem(\'grand_virtual_active\')}catch(e){}">' + gpEsc(gpCleanCat(it.id, it.name, false)) + '</a>';
       }
     }
-    // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS
+    // 次分類：目前主分類的子分類，優先即時讀，後備 GCATS（停在虛擬分頁時不顯示來源分類的次分類）
     var sr = '';
-    if (curMain) {
+    if (curMain && !onVirtual) {
       var subList = live.subs.filter(function (s) { return s.main === curMain; });
       if (!subList.length) {
         var gc = GCATS.filter(function (c) { return c.i === curMain; })[0];
