@@ -681,11 +681,12 @@
     var items = [];
     GCATS.forEach(function (c) { items.push({ kind: 'main', id: c.i, name: c.n }); });
     live.mains.forEach(function (lm) { if (!gcatIdSet[lm.id]) items.push({ kind: 'main', id: lm.id, name: lm.name }); });
-    live.virtual.forEach(function (v) { items.push({ kind: 'virtual', href: v.href, name: v.name, onclick: v.onclick, seq: v.seq }); });
+    live.virtual.forEach(function (v, vi) { items.push({ kind: 'virtual', href: v.href, name: v.name, onclick: v.onclick, vIndex: vi }); });
     var fallback = items.length + 1000;
+    // 虛擬分頁(爆款等)在系統 sidebar 永遠在最頂 → 強制排最前（負 key），主分類照 DOM seq 排
     items.sort(function (a, b) {
-      var sa = (a.kind === 'virtual') ? a.seq : ((live.seq[a.id] !== undefined) ? live.seq[a.id] : fallback);
-      var sb = (b.kind === 'virtual') ? b.seq : ((live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback);
+      var sa = (a.kind === 'virtual') ? (-1000 + a.vIndex) : ((live.seq[a.id] !== undefined) ? live.seq[a.id] : fallback);
+      var sb = (b.kind === 'virtual') ? (-1000 + b.vIndex) : ((live.seq[b.id] !== undefined) ? live.seq[b.id] : fallback);
       return sa - sb;
     });
     var curPath = location.pathname + location.search;
