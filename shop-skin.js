@@ -616,26 +616,41 @@
       if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
       else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
     }
-    // 讀虛擬分頁：scan 左側分類欄（被皮膚 CSS 隱藏但 DOM 還在）的 a 連結
-    var sidebar = document.querySelector('.left_td') || document.querySelector('[id*="cls"]') || document.body;
-    var aTags = sidebar.querySelectorAll('a[href]');
-    for (var k = 0; k < aTags.length; k++) {
-      var a = aTags[k];
-      if (a.getAttribute('onclick')) continue; // topcls 已處理
-      var href = a.getAttribute('href') || '';
-      // 只認指向商品清單的 href：/product 路徑、或 ?xx= 過濾參數，不含 /p{psn} 單品頁
-      if (!/^(\/product|\/\?|\?)/.test(href)) continue;
-      if (/\/product\/p\d+/.test(href)) continue;
-      // 跳過 "所有商品 /product" 這種重複入口
-      if (href === '/product' || href === '/product/' || href === '/') continue;
-      var nm = (a.innerText || a.textContent || '').trim().replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
-      if (!nm) continue;
-      // 已存在於 topcls 體系的不重複加（避免 /product/{id} 被誤判為虛擬）
-      var idM = href.match(/\/product\/(\d+)/);
-      if (idM && mseen[idM[1]]) continue;
-      if (vseen[href]) continue; vseen[href] = 1;
-      virtual.push({ href: href, name: nm, seq: 10000 + virtual.length });
+    // 讀虛擬分頁：左側 sidebar 內非 topcls 但仍是商品清單入口（爆款下單區🔥 等）
+    var sidebar = document.querySelector('.left_td') || document;
+    var sideEls = sidebar.querySelectorAll('a, [onclick]');
+    for (var k = 0; k < sideEls.length; k++) {
+      var el = sideEls[k];
+      var nm = (el.innerText || el.textContent || '').trim().replace(/[\.．·・…]{2,}\s*\d+\s*$/, '').trim();
+      if (!nm || nm.length < 2 || nm === '所有商品') continue;
+      var href = el.getAttribute('href') || '';
+      var oc = el.getAttribute('onclick') || '';
+      // 排除明顯非商品入口
+      if (/(mem_login|member|mycar|cart|join|register|logout|關於|聯絡|FAQ|q\?a|q&a)/i.test(href + ' ' + nm)) continue;
+      var resolvedHref = '';
+      // 1) topcls(id, '') 的主分類 — 不論 id 是數字或字串
+      var tc = oc.match(/topcls\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]*)['"]\)/);
+      if (tc && tc[2] === '') {
+        if (mseen[tc[1]]) continue; // 已是正規分類
+        resolvedHref = '/product/' + tc[1];
+      }
+      // 2) 直接 href 指向 /product
+      else if (/^(\/product|\/\?|\?)/.test(href) && !/\/product\/p\d+/.test(href) && href !== '/product' && href !== '/product/') {
+        var idM = href.match(/\/product\/(\d+)/);
+        if (idM && mseen[idM[1]]) continue;
+        resolvedHref = href;
+      }
+      // 3) onclick 內含 location.href = '...' 模式
+      else {
+        var lm = oc.match(/location(?:\.href)?\s*=\s*['"]([^'"]+)['"]/);
+        if (lm && /product/.test(lm[1])) resolvedHref = lm[1];
+      }
+      if (!resolvedHref || vseen[resolvedHref]) continue;
+      vseen[resolvedHref] = 1;
+      virtual.push({ href: resolvedHref, name: nm });
     }
+    // 診斷：把找到的虛擬分頁印到 console，方便確認名稱/URL 是否正確
+    try { if (virtual.length) console.log('[grand-skin] 虛擬分頁:', virtual); } catch (_) {}
     return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
   }
   function gpCatNav() {
