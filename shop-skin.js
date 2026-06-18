@@ -583,12 +583,12 @@
     }
     gpFilter = gpTokenize(v);
     if (inCat) {
-      // 已在分類內 → 鎖定當前分類，當頁客戶端 AND 過濾，不導頁
-      var items2 = gatherProducts();
-      renderPrettyGrid(items2);
-      refreshSearchBar();
+      // 用 Shop2000 原生「僅此分類」搜尋(kwpcls=y)：跨該分類所有分頁，
+      // 不再像舊版只客戶端過濾當前頁(會漏掉其他分頁的商品)。
+      // 分類路徑帶在 pathname，kwpcls=y 是 Shop2000 原生限定當前分類的旗標。
+      location.href = location.pathname + '?kw=' + encodeURIComponent(v) + '&kwpcls=y';
     } else {
-      // 全部商品 → 用 Shop2000 原生搜尋導頁；多關鍵字之後在 render 階段二次 AND 過濾
+      // 全部商品 → 用 Shop2000 原生全站搜尋導頁；多關鍵字之後在 render 階段二次 AND 過濾
       location.href = '/product?kw=' + encodeURIComponent(v);
     }
   }
@@ -897,7 +897,10 @@
     // 若 URL 帶 ?kw=，初始化 gpFilter；之後 renderPrettyGrid 會做 AND 過濾（多關鍵字也能精確命中）
     if (gpFilter === null) {
       var kwM = location.search.match(/[?&]kw=([^&]*)/);
-      if (kwM) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
+      // 帶 kwpcls=y → 已是 Shop2000 原生「僅此分類」搜尋結果(已跨分頁限定該分類)，
+      // 皮膚不再客戶端二次過濾，避免誤刪原生命中項；只負責漂亮渲染 + 走原生分頁。
+      var nativeCatSearch = /[?&]kwpcls=y/.test(location.search);
+      if (kwM && !nativeCatSearch) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
     }
     // 樣式
     if (!document.getElementById('gp-css')) {
