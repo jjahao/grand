@@ -895,12 +895,10 @@
     if (document.getElementById('gp-wrap')) return;
     var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
     // 若 URL 帶 ?kw=，初始化 gpFilter；之後 renderPrettyGrid 會做 AND 過濾（多關鍵字也能精確命中）
+    // kwpcls=y 時 Shop2000 原生已限定分類範圍，皮膚在其結果上再疊 AND 過濾，雙重精準。
     if (gpFilter === null) {
       var kwM = location.search.match(/[?&]kw=([^&]*)/);
-      // 帶 kwpcls=y → 已是 Shop2000 原生「僅此分類」搜尋結果(已跨分頁限定該分類)，
-      // 皮膚不再客戶端二次過濾，避免誤刪原生命中項；只負責漂亮渲染 + 走原生分頁。
-      var nativeCatSearch = /[?&]kwpcls=y/.test(location.search);
-      if (kwM && !nativeCatSearch) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
+      if (kwM) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
     }
     // 樣式
     if (!document.getElementById('gp-css')) {
@@ -914,7 +912,7 @@
         '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
         '.gp-imw{padding:10px}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
         '.gp-bd{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}',
-        '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}',
+        '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:55px}',
         '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
         '.gp-dlv{font-size:11px;color:#007600}',
         '.gp-brief{font-size:11.5px;color:#B12704;background:#FFF6E5;border:1px solid #FFE8B3;border-radius:6px;padding:4px 8px;margin:-2px 0 0;line-height:1.4;display:none}',
