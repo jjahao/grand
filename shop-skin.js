@@ -558,8 +558,9 @@
     return gpCleanCat(mainId, mainName, false) + (subName ? ' ／ ' + gpCleanCat(subId, subName, true) : '');
   }
   function gpSearchBar() {
-    var m = location.search.match(/[?&]kw=([^&]*)/);
-    var cur = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+    var gpqM = location.search.match(/[?&]gpq=([^&]*)/);
+    var kwM  = location.search.match(/[?&]kw=([^&]*)/);
+    var cur  = gpqM ? decodeURIComponent(gpqM[1].replace(/\+/g, ' ')) : (kwM ? decodeURIComponent(kwM[1].replace(/\+/g, ' ')) : '');
     var catLabel = gpCurCatLabel();
     var ph = catLabel ? ('在「' + catLabel + '」內搜尋，可空格分多個關鍵字…') : '搜尋商品名稱（可空格分多個關鍵字）…';
     var tip = '';
@@ -582,14 +583,14 @@
       return;
     }
     gpFilter = gpTokenize(v);
+    // 只傳第一個關鍵字給 Shop2000（避免空格被當成整串搜尋而回傳 0 件）
+    // 完整查詢用 &gpq= 帶過去，皮膚載入後從 gpq 重建 AND filter
+    var firstKw = gpFilter[0] || v;
+    var gpqParam = gpFilter.length > 1 ? ('&gpq=' + encodeURIComponent(v)) : '';
     if (inCat) {
-      // 分類搜尋：只傳第一個關鍵字給 Shop2000（kwpcls=y 限定分類、跨分頁）
-      // 其餘關鍵字由皮膚 AND filter 客戶端過濾，避免 Shop2000 把空格當成整串搜尋而回傳 0 件。
-      var firstKw = gpFilter[0] || v;
-      location.href = location.pathname + '?kw=' + encodeURIComponent(firstKw) + '&kwpcls=y';
+      location.href = location.pathname + '?kw=' + encodeURIComponent(firstKw) + '&kwpcls=y' + gpqParam;
     } else {
-      // 全部商品 → 用 Shop2000 原生全站搜尋導頁；多關鍵字之後在 render 階段二次 AND 過濾
-      location.href = '/product?kw=' + encodeURIComponent(v);
+      location.href = '/product?kw=' + encodeURIComponent(firstKw) + gpqParam;
     }
   }
   function refreshSearchBar() {
@@ -894,11 +895,13 @@
   function buildPrettyList() {
     if (document.getElementById('gp-wrap')) return;
     var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
-    // 若 URL 帶 ?kw=，初始化 gpFilter；之後 renderPrettyGrid 會做 AND 過濾（多關鍵字也能精確命中）
-    // kwpcls=y 時 Shop2000 原生已限定分類範圍，皮膚在其結果上再疊 AND 過濾，雙重精準。
+    // 若 URL 帶 gpq=（完整多關鍵字查詢）優先用它；否則 fallback 到 kw=
+    // gpq= 是皮膚自己加的，kw= 只存第一個關鍵字（傳給 Shop2000 用）
     if (gpFilter === null) {
-      var kwM = location.search.match(/[?&]kw=([^&]*)/);
-      if (kwM) gpFilter = gpTokenize(decodeURIComponent(kwM[1].replace(/\+/g, ' ')));
+      var gpqM = location.search.match(/[?&]gpq=([^&]*)/);
+      var kwM  = location.search.match(/[?&]kw=([^&]*)/);
+      var raw  = gpqM ? gpqM[1] : (kwM ? kwM[1] : '');
+      if (raw) gpFilter = gpTokenize(decodeURIComponent(raw.replace(/\+/g, ' ')));
     }
     // 樣式
     if (!document.getElementById('gp-css')) {
