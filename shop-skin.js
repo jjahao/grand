@@ -583,10 +583,10 @@
     }
     gpFilter = gpTokenize(v);
     if (inCat) {
-      // 用 Shop2000 原生「僅此分類」搜尋(kwpcls=y)：跨該分類所有分頁，
-      // 不再像舊版只客戶端過濾當前頁(會漏掉其他分頁的商品)。
-      // 分類路徑帶在 pathname，kwpcls=y 是 Shop2000 原生限定當前分類的旗標。
-      location.href = location.pathname + '?kw=' + encodeURIComponent(v) + '&kwpcls=y';
+      // 分類搜尋：只傳第一個關鍵字給 Shop2000（kwpcls=y 限定分類、跨分頁）
+      // 其餘關鍵字由皮膚 AND filter 客戶端過濾，避免 Shop2000 把空格當成整串搜尋而回傳 0 件。
+      var firstKw = gpFilter[0] || v;
+      location.href = location.pathname + '?kw=' + encodeURIComponent(firstKw) + '&kwpcls=y';
     } else {
       // 全部商品 → 用 Shop2000 原生全站搜尋導頁；多關鍵字之後在 render 階段二次 AND 過濾
       location.href = '/product?kw=' + encodeURIComponent(v);
