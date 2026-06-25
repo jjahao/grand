@@ -633,7 +633,7 @@
       if (tc) {
         var main = tc[1], sub = tc[2], name = (el.innerText || el.textContent || '').trim();
         if (parentSeq[main] === undefined) parentSeq[main] = seqIdx++;
-        if (sub === '') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
+        if (sub === '' || sub === 'all') { if (!mseen[main]) { mseen[main] = 1; mains.push({ id: main, name: name }); } }
         else { if (!sseen[sub]) { sseen[sub] = 1; subs.push({ id: sub, main: main, name: name }); } }
         continue;
       }
@@ -686,7 +686,7 @@
     var mainSrc; // [{id,name,seq}]
     if (authoritative) {
       mainSrc = liveIds.map(function (id) {
-        return { id: id, name: GCAT_NAME[id] || liveMainNames[id] || id, seq: live.seq[id] };
+        return { id: id, name: liveMainNames[id] || GCAT_NAME[id] || id, seq: live.seq[id] };
       });
       try { sessionStorage.setItem('grand_main_cats', JSON.stringify(mainSrc)); } catch (_) {}
     } else {
