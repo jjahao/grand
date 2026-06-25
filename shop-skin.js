@@ -583,17 +583,14 @@
       return;
     }
     gpFilter = gpTokenize(v);
+    var firstKw = gpFilter[0] || v;
+    var gpqParam = gpFilter.length > 1 ? ('&gpq=' + encodeURIComponent(v)) : '';
     if (inCat) {
-      // 已在分類內 → 不導頁，直接在當前頁客戶端 AND 過濾（9b7854e 驗證可行的方案）
-      // Shop2000 的 kw= 空格視為片語搜尋回傳 0 件，用 kwpcls=y 導頁會整個壞掉
-      var items2 = gatherProducts();
-      renderPrettyGrid(items2);
-      refreshSearchBar();
+      // 分類內 → 用 kwpcls=y 搜該分類全部商品（不只當頁 40 筆）
+      // 只傳第一個關鍵字給 Shop2000（空格會被當片語回 0 件），多關鍵字靠 gpq= 客戶端 AND 過濾
+      location.href = location.pathname + '?kw=' + encodeURIComponent(firstKw) + '&kwpcls=y' + gpqParam;
     } else {
-      // 全部商品 → 傳第一個關鍵字給 Shop2000，結果頁再 AND 過濾
-      // 多關鍵字完整查詢存入 gpq=，載入後重建 gpFilter
-      var firstKw = gpFilter[0] || v;
-      var gpqParam = gpFilter.length > 1 ? ('&gpq=' + encodeURIComponent(v)) : '';
+      // 全站搜尋
       location.href = '/product?kw=' + encodeURIComponent(firstKw) + gpqParam;
     }
   }
