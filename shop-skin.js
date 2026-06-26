@@ -515,18 +515,34 @@
     return false;
   }
   function gpEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // 簡體→繁體常用字對照（粗略表，覆蓋日常/食品/雜貨高頻字，非完整萬字轉換；2026-06-26 James 核定加入）
+  // 目的：客人用簡體輸入法打字（如「酱油」）也能搜到繁體商品名（「醬油」）。
+  var GP_S2T = {"酱":"醬","面":"麵","萝":"蘿","卜":"蔔","蒜":"蒜","姜":"薑","鸡":"雞","鸭":"鴨","鱼":"魚","虾":"蝦","贝":"貝","蟹":"蟹","肉":"肉","蛋":"蛋","奶":"奶","糖":"糖","盐":"鹽","醋":"醋","辣":"辣","甜":"甜","咸":"鹹","酸":"酸","苦":"苦","饭":"飯","粥":"粥","汤":"湯","饼":"餅","面包":"麵包","蛋糕":"蛋糕","饺":"餃","馄":"餛","饨":"飩","面条":"麵條","拉面":"拉麵","乌冬":"烏冬","荞":"蕎","麦":"麥","谷":"穀","豆":"豆","腐":"腐","干":"乾","果":"果","蔬":"蔬","菜":"菜","葱":"蔥","韭":"韭","芹":"芹","椒":"椒","姜":"薑","葡":"葡","萄":"萄","苹":"蘋","梨":"梨","桃":"桃","杏":"杏","枣":"棗","莲":"蓮","藕":"藕","笋":"筍","菇":"菇","菌":"菌","茸":"茸","酒":"酒","茶":"茶","咖":"咖","啡":"啡","奶茶":"奶茶","巧克力":"巧克力","饮":"飲","料":"料","乳":"乳","酪":"酪","酥":"酥","脂":"脂","油":"油","酱油":"醬油","调":"調","味":"味","料理":"料理","烧":"燒","烤":"烤","炸":"炸","煮":"煮","蒸":"蒸","炒":"炒","卤":"滷","渍":"漬","腌":"醃","熏":"燻","干货":"乾貨","零食":"零食","点心":"點心","糕":"糕","饼干":"餅乾","薯":"薯","片":"片","条":"條","丝":"絲","块":"塊","粒":"粒","包":"包","盒":"盒","罐":"罐","瓶":"瓶","袋":"袋","箱":"箱","组":"組","套":"套","件":"件","个":"個","只":"隻","双":"雙","对":"對","张":"張","台":"台","机":"機","器":"器","具":"具","品":"品","质":"質","量":"量","价":"價","钱":"錢","货":"貨","购":"購","买":"買","卖":"賣","销":"銷","售":"售","订":"訂","单":"單","号":"號","码":"碼","数":"數","计":"計","算":"算","汇":"匯","换":"換","兑":"兌","限":"限","定":"定","专":"專","属":"屬","区":"區","类":"類","种":"種","样":"樣","式":"式","型":"型","号":"號","款":"款","系":"系","列":"列","组合":"組合","装":"裝","包装":"包裝","内":"內","容":"容","净":"淨","重":"重","量":"量","规":"規","格":"格","标":"標","签":"籤","识":"識","图":"圖","片":"片","颜":"顏","色":"色","红":"紅","黄":"黃","绿":"綠","蓝":"藍","紫":"紫","黑":"黑","白":"白","灰":"灰","粉":"粉","橙":"橙","银":"銀","金":"金","铜":"銅","铁":"鐵","钢":"鋼","塑":"塑","胶":"膠","纸":"紙","布":"布","线":"線","绳":"繩","带":"帶","扣":"扣","钮":"鈕","盖":"蓋","壳":"殼","盘":"盤","碗":"碗","杯":"杯","碟":"碟","桶":"桶","篮":"籃","袜":"襪","裤":"褲","衫":"衫","裙":"裙","鞋":"鞋","帽":"帽","巾":"巾","枕":"枕","垫":"墊","毯":"毯","被":"被","褥":"褥","柜":"櫃","架":"架","桌":"桌","椅":"椅","灯":"燈","钟":"鐘","表":"表","镜":"鏡","梳":"梳","刷":"刷","牙":"牙","洁":"潔","净":"淨","洗":"洗","发":"髮","肤":"膚","妆":"妝","美":"美","容":"容","护":"護","理":"理","养":"養","疗":"療","药":"藥","医":"醫","诊":"診","检":"檢","验":"驗","测":"測","查":"查","验证":"驗證","证":"證","卡":"卡","账":"帳","户":"戶","会":"會","员":"員","积":"積","换":"換","赠":"贈","礓":"獎","奖":"獎","励":"勵","优":"優","惠":"惠","折":"折","扣":"扣","满":"滿","送":"送","赞":"讚","评":"評","论":"論","谈":"談","讨":"討","询":"詢","询问":"詢問","问":"問","题":"題","答":"答","复":"覆","应":"應","该":"該","须":"須","须要":"須要","需":"需","务":"務","务必":"務必","必":"必","须知":"須知","注":"注","释":"釋","说":"說","明":"明","细":"細","详":"詳","简":"簡","略":"略","总":"總","结":"結","汇总":"匯總","统":"統","计":"計","数据":"數據","资":"資","讯":"訊","信":"信","息":"息","网":"網","络":"絡","络":"絡","线":"線","连":"連","结":"結","续":"續","断":"斷","续":"續"};
+  function gpS2T(s) { return String(s || '').replace(/[一-鿿]/g, function (c) { return GP_S2T[c] || c; }); }
+  function gpNorm(s) { return gpS2T(String(s || '').toLowerCase()); }
+  // 中英品牌/通路同義詞（同組內任一字串視為等價，2026-06-26 James 核定加入）
+  var GP_SYN = [["好市多","costco"],["7-11","7-eleven","seven eleven","711","小七"],["全家","family mart","familymart"],["萊爾富","hi-life","hilife"],["迪士尼","disney"],["麵包超人","anpanman"],["寶可夢","pokemon","pokémon"],["三麗鷗","sanrio"],["哆啦a夢","哆啦a梦","doraemon","小叮噹"],["凱蒂貓","kitty","hello kitty"],["美樂蒂","my melody"],["大耳狗","cinnamoroll"],["蠟筆小新","crayon shin-chan"]];
+  function gpSynMatch(tokenNorm, nameNorm) {
+    if (nameNorm.indexOf(tokenNorm) >= 0) return true;
+    for (var i = 0; i < GP_SYN.length; i++) {
+      var g = GP_SYN[i];
+      if (g.indexOf(tokenNorm) < 0) continue;
+      for (var j = 0; j < g.length; j++) { if (nameNorm.indexOf(gpNorm(g[j])) >= 0) return true; }
+    }
+    return false;
+  }
   /* 分類樹（主分類 i=id n=名 s=[次分類id,名,件數]）。topcls 導向 /product/{主}/{次}。 */
   var GCATS=[{"i":"681206","n":"迪士尼","s":[["1541427","11/10新品-米奇雪精靈系列",55],["1541022","11/4新品-冬季系列",41],["1530358","8/28新品-達菲鳥舞落葉系列",38],["1523064","7/3新品-達菲甜甜圈系列",24],["1518357","6/5新品",35],["1518356","6/3新品",12],["1518355","達菲20週年系列",57],["1519704","其他",1187]]},{"i":"653720","n":"日本好市多","s":[["1364630","藥品/保健類",304],["1364631","零食類",374],["1364632","食品/酒類",427],["1364633","生活用品類",510],["1364634","衣著類",86],["1364635","美妝用品類",113],["1364636","文具類",34],["1364637","沐浴類",57]]},{"i":"654002","n":"便利商店","s":[["1365721","7-11",772],["1365722","family mart",176],["1365723","lawson",35]]},{"i":"653722","n":"量販店","s":[["1364642","零食類",915],["1364643","調味料",99],["1364644","糖果/巧克力",226],["1364645","其他零嘴小吃",213],["1402772","酒類",2]]},{"i":"653718","n":"MDM批發","s":[["1536504","DHC保健食品",5],["1450733","調味料",6],["1579264","清潔用品",18],["1450734","防蚊防蟲",16],["1450730","食品零食",222],["1450731","美妝・美妝小物",53],["1450729","入浴球",9],["1463220","瑪利歐系列",19],["1464923","OK繃系列",4],["1464918","三麗鷗系列",27],["1464921","寶可夢系列",3],["1463222","吉伊卡哇系列",60],["1463225","星之卡比系列",0],["1464919","森林家族系列",0],["1463226","トミカ玩具車",0],["1463227","麵包超人系列",29],["1463224","盒玩",0],["1450732","其它",182]]},{"i":"653726","n":"日本藥妝","s":[["1364650","日本處方簽專區",53],["1364651","藥品類",229],["1528345","Atomy",14]]},{"i":"713983","n":"茅乃舍","s":[]},{"i":"654004","n":"百貨禮盒","s":[["1375358","小倉山莊",33],["1559106","GRAMERCY NEWYORK",9],["1439404","GOD BLESS BUTTER 神之手",3],["1415451","GALLETE au BEURRE",17],["1415450","NY紐約起司蛋捲",8],["1375359","Tulip Rose",10],["1376695","YOKU MOKU",37],["1375360","Audrey 花束餅乾",19],["1376693","Sugar Butter Tree",15],["1376694","鎌倉五郎(半月)",4],["1376696","GATEAU FESTA HARADA",9],["1376690","東京牛奶起司工廠 Tokyo Milk cheese factory",7],["1415453","AND THE FRIET薯條餅乾",13],["1375362","上野風月堂/東京風月堂/神戶風月堂",42],["1375363","桂新堂",9],["1376847","福砂屋",7],["1394180","東京芭娜娜/迪士尼聯名",28],["1428921","FRANCAJS",7],["1375361","其他品牌",216],["1376697","名古屋蝦餅",3],["1439407","Mary's 巧克力",13],["1439411","Number sugar",5],["1439412","一創堂",6],["1439413","Sable Michelle 周遊世界餅乾罐",25],["1439414","銀座菊廼舎",4],["1439415","銀座西",5],["1439416","東京巧克力工廠",4],["1439450","Press Butter Sand",13],["1439452","PARIS BUTTER CHOCOLAT",7],["1439453","神戶布丁",4],["1439454","BENIYA 松鼠核桃",2],["1439457","CoroCoro waffle cube",4],["1439458","Cream cheese cake",3],["1439487","TOKYO ひよこ",2],["1439488","captain sweets burger",13],["1439495","Tokyo Corne Fleuri玫瑰花巧克力",2],["1439496","Sabrina小花酥餅",16],["1439503","BRULEE MERIZE布蕾",7],["1459558","BUTTER STATE's",10],["1459559","Apple & Butter",3],["1459562","喫茶店",8],["1459564","calbee",23],["1552628","TOKYO RUSK",8],["1552656","Colombin",4],["1571623","RAMEN CLUB 拉麵餅乾",6]]},{"i":"684454","n":"台北現貨","s":[]}];
   // 多關鍵字過濾狀態：null = 不過濾；array = [token1, token2, ...]（全部 lowercase，AND 匹配）
   var gpFilter = null;
   function gpTokenize(v) {
-    return (v || '').trim().split(/[\s　]+/).filter(Boolean).map(function (t) { return t.toLowerCase(); });
+    return (v || '').trim().split(/[\s　]+/).filter(Boolean).map(function (t) { return gpNorm(t); });
   }
   function gpApplyFilter(items) {
     if (!gpFilter || !gpFilter.length) return items;
     return items.filter(function (p) {
-      var n = (p.name || '').toLowerCase();
-      return gpFilter.every(function (t) { return n.indexOf(t) >= 0; });
+      var n = gpNorm(p.name || '');
+      return gpFilter.every(function (t) { return gpSynMatch(t, n); });
     });
   }
   // 使用者「目前停在哪個虛擬分頁」的記號（點爆款時寫入，點正規分類時清除）。
@@ -778,9 +794,9 @@
       }
     }, { passive: false });
   }
-  function gatherProducts() {
-    // 只抓 #plist_tb（真正的分類/全部商品清單）；plist_tb{數字} 是固定推薦區，排除。
-    var root = document.getElementById('plist_tb') || document;
+  // 共用解析（可吃 document 或 fetch 回來的另一頁 DOM），供 gatherProducts 與多分頁聚合共用
+  function gpParseDoc(doc) {
+    var root = doc.getElementById('plist_tb') || doc;
     var imgs = root.querySelectorAll('img.pimg'), items = [], seen = {};
     for (var i = 0; i < imgs.length; i++) {
       var img = imgs[i], psn = img.getAttribute('psn'); if (!psn || seen[psn]) continue; seen[psn] = 1;
@@ -790,6 +806,48 @@
       items.push({ psn: psn, img: img.getAttribute('src') || '', name: a ? a.textContent.trim() : '', nt: (txt.match(/台幣\s*([0-9,]+)/) || [])[1] || '' });
     }
     return items;
+  }
+  // 原生分頁總頁數：分頁列每個數字格都帶 to_p="N" 屬性（含跳末頁的 ">>17"），取最大值即總頁數
+  function gpMaxNativePage(doc) {
+    var els = doc.querySelectorAll('[to_p]'), max = 1;
+    for (var i = 0; i < els.length; i++) {
+      var v = parseInt(els[i].getAttribute('to_p'), 10);
+      if (!isNaN(v) && v > max) max = v;
+    }
+    return max;
+  }
+  var GP_MAX_FETCH_PAGES = 15; // 節流上限：避免多關鍵字搜尋時把 Shop2000 整批分頁掃光，觸發「請放慢操作速度」限流
+  // 多關鍵字搜尋時，原生引擎只用第一個字搜，命中可能跨多個原生分頁；
+  // 這裡把剩下的分頁一頁一頁抓回來（同網域 fetch，帶 cookie），合併後再做 AND 過濾，才不會漏掉沒出現在第 1 頁的商品。
+  // 2026-06-26 James 核定加入。
+  function gpExpandMultiPage(baseItems) {
+    var max = gpMaxNativePage(document);
+    if (max <= 1) return Promise.resolve(baseItems);
+    var capped = Math.min(max, GP_MAX_FETCH_PAGES);
+    var cleanUrl = location.href.replace(/[?&]to_p=\d+/, '');
+    var sep = cleanUrl.indexOf('?') >= 0 ? '&' : '?';
+    var all = baseItems.slice(), seen = {};
+    baseItems.forEach(function (p) { seen[p.psn] = 1; });
+    var chain = Promise.resolve();
+    for (var pg = 2; pg <= capped; pg++) {
+      (function (pageNo) {
+        chain = chain.then(function () {
+          return new Promise(function (resolve) { setTimeout(resolve, 280); }); // 節流間隔
+        }).then(function () {
+          return fetch(cleanUrl + sep + 'to_p=' + pageNo, { credentials: 'same-origin' })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var items = gpParseDoc(doc);
+              items.forEach(function (it) { if (!seen[it.psn]) { seen[it.psn] = 1; all.push(it); } });
+            }).catch(function () {});
+        });
+      })(pg);
+    }
+    return chain.then(function () { return all; });
+  }
+  function gatherProducts() {
+    return gpParseDoc(document);
   }
   function productContainer() {
     var pt = document.getElementById('plist_tb'); if (pt) return pt; // 真正的商品清單容器
@@ -1082,6 +1140,10 @@
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
     renderPrettyGrid(items);
+    // 多關鍵字搜尋（gpFilter 超過1個字）→ 背景把原生其餘分頁也抓回來合併過濾，避免漏掉不在第1頁的商品
+    if (gpFilter && gpFilter.length > 1) {
+      gpExpandMultiPage(items).then(function (allItems) { renderPrettyGrid(allItems); });
+    }
     // 桌面拖曳橫向滾動分類列（Windows 無觸控滑修補）
     [].forEach.call(wrap.querySelectorAll('.gc-mainrow, .gc-subrow'), attachDragScroll);
     setInterval(gpSyncCount, 1500);
