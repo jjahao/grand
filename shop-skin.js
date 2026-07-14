@@ -15,6 +15,23 @@
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
   var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
   var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
+  var MEMBER_CAT_CACHE_VERSION = '20260714a';
+  var MEMBER_CAT_CACHE_KEYS = ['grand_main_cats', 'grand_virtual_cats', 'grand_virtual_active'];
+
+  function clearMemberCategoryCache() {
+    try {
+      for (var i = 0; i < MEMBER_CAT_CACHE_KEYS.length; i++) sessionStorage.removeItem(MEMBER_CAT_CACHE_KEYS[i]);
+    } catch (e) {}
+  }
+
+  function initializeMemberCategoryCache() {
+    try {
+      if (sessionStorage.getItem('grand_member_cat_cache_version') !== MEMBER_CAT_CACHE_VERSION) {
+        clearMemberCategoryCache();
+        sessionStorage.setItem('grand_member_cat_cache_version', MEMBER_CAT_CACHE_VERSION);
+      }
+    } catch (e) {}
+  }
 
   function openGrandLogin(event){
     if(event && event.preventDefault){
@@ -59,10 +76,17 @@
         try {
           var form = document.forms['form_login_mem'] || document.querySelector('form[name="form_login_mem"]') || document.querySelector('form');
           if (!form) return;
+          // Shop2000 可能用 form.submit() 送出，該方法不會觸發 submit 事件。
+          // 因此登入表單一出現就先清掉上一位會員的分類快取，避免權限清單交叉沿用。
+          clearMemberCategoryCache();
           var http = form.elements['http_ref'];
           if (http && !http.value) http.value = '/';
           var vdir = form.elements['vdir'];
           if (vdir && !vdir.value) vdir.value = '';
+          if (!form.dataset.grandMemberCategoryResetBound) {
+            form.dataset.grandMemberCategoryResetBound = '1';
+            form.addEventListener('submit', clearMemberCategoryCache);
+          }
         } catch (e) {}
       }
       window.addEventListener('load', setHttpRefIfEmpty);
@@ -635,12 +659,13 @@
   // 即時讀官網現有分類選單(藏在頁面裡的 topcls)；後台上/下架→這裡自動同步
   // 同時記錄每個分類（含只出現在 sub 的父分類）第一次出現的順序，供排序用
   // 額外讀「虛擬分頁」：左側 sidebar 內非 topcls、卻指向商品清單的 a（例：爆款下單區🔥）
-  function gpReadLiveCats() {
+  function gpReadLiveCats(rootDoc) {
+    rootDoc = rootDoc || document;
     var mains = [], mseen = {}, subs = [], sseen = {};
     var parentSeq = {}, seqIdx = 0; // 共享計數：sidebar 內所有「分類項目」依 DOM 順序遞增（含虛擬分頁）
     var virtual = [], vseen = {};
     // 一次掃描所有有 onclick 的元素，按 DOM 順序處理（讓虛擬分頁與主分類共享 seq，可一起排序）
-    var els = document.querySelectorAll('[onclick]');
+    var els = rootDoc.querySelectorAll('[onclick]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       var oc = el.getAttribute('onclick') || '';
@@ -689,16 +714,36 @@
     try { if (virtual.length) console.log('[grand-skin] 虛擬分頁:', virtual); } catch (_) {}
     return { mains: mains, subs: subs, seq: parentSeq, virtual: virtual };
   }
-  function gpCatNav() {
+
+  function gpLiveMainCount(live) {
+    return Object.keys((live && live.seq) || {}).length;
+  }
+
+  function gpResolveLiveCats() {
+    var live = gpReadLiveCats(document);
+    // 會員可能依權限只看到 1～3 個分類；只要伺服器有回傳，就必須視為完整清單。
+    if (gpLiveMainCount(live) > 0) return Promise.resolve(live);
+    // 某些商品/虛擬分類頁沒有完整 sidebar；用同一會員 cookie 唯讀抓 /product 補齊。
+    return fetch('/product', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('category fetch ' + r.status); return r.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var fetched = gpReadLiveCats(doc);
+        return gpLiveMainCount(fetched) > 0 ? fetched : live;
+      })
+      .catch(function () { return live; });
+  }
+
+  function gpCatNav(liveOverride) {
     var m = location.pathname.match(/\/product\/(\d+)(?:\/(\d+))?/);
     var curMain = m ? m[1] : '', curSub = (m && m[2]) ? m[2] : '';
-    var live = gpReadLiveCats();
+    var live = liveOverride || gpReadLiveCats(document);
     // === 主分類清單以「系統即時選單」為準：系統移除的分類，皮也跟著消失（不再寫死全套 GCATS）===
     // live.seq 含所有出現在 DOM 的主分類 id（含只透過子分類出現的父分類）。
     var liveMainNames = {};
     live.mains.forEach(function (lm) { liveMainNames[lm.id] = lm.name; });
     var liveIds = Object.keys(live.seq);
-    var authoritative = liveIds.length >= 4; // 完整左側分類選單存在；/home 等精簡頁讀不全 → 靠快取
+    var authoritative = liveIds.length > 0; // 會員可能合法地只看到 1～3 類，不能再用「至少 4 類」判斷
     var mainSrc; // [{id,name,seq}]
     if (authoritative) {
       mainSrc = liveIds.map(function (id) {
@@ -708,7 +753,8 @@
     } else {
       var cachedM = null;
       try { cachedM = JSON.parse(sessionStorage.getItem('grand_main_cats') || 'null'); } catch (_) {}
-      mainSrc = cachedM || GCATS.map(function (c, i) { return { id: c.i, name: c.n, seq: i }; });
+      // 登入切換時快取會先清除；沒有本會員即時/快取資料時只顯示「全部」，不可拿共用 GCATS 冒充。
+      mainSrc = cachedM || [];
     }
     var items = [];
     mainSrc.forEach(function (mc) { items.push({ kind: 'main', id: mc.id, name: mc.name, mseq: mc.seq }); });
@@ -951,7 +997,7 @@
   }
   /* 預抓已關閉(被 Shop2000 速率限制「請放慢操作速度」擋)。保留空函式避免舊呼叫炸錯。 */
   function gpKickPrefetch() {}
-  function buildPrettyList() {
+  function buildPrettyList(liveCats) {
     if (document.getElementById('gp-wrap')) return;
     var items = gatherProducts(); if (items.length < 4) return; // 商品還沒載好就先不做
     // 若 URL 帶 gpq=（完整多關鍵字查詢）優先用它；否則 fallback 到 kw=
@@ -1034,7 +1080,7 @@
     var mw = document.getElementById('main_width');
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
-      gpSearchBar() + gpCatNav() +
+      gpSearchBar() + gpCatNav(liveCats) +
       '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
@@ -1165,7 +1211,10 @@
     var tries = 0;
     var iv = setInterval(function () {
       if (document.getElementById('gp-wrap')) { clearInterval(iv); return; }
-      if ((document.getElementById('plist_tb') || document).querySelectorAll('img.pimg').length >= 4) { clearInterval(iv); buildPrettyList(); }
+      if ((document.getElementById('plist_tb') || document).querySelectorAll('img.pimg').length >= 4) {
+        clearInterval(iv);
+        gpResolveLiveCats().then(function (liveCats) { if (!document.getElementById('gp-wrap')) buildPrettyList(liveCats); });
+      }
       else if (tries++ > 16) clearInterval(iv);
     }, 500);
   }
@@ -1185,6 +1234,7 @@
   }
 
   function run() {
+    initializeMemberCategoryCache();
     ensureViewport();
     // 店長已登入 → 皮膚讓位，直接用舊系統管理（含工具列較晚載入，下方再輪詢補偵測）
     if (isBoss()) { bossStepAside(); return; }
