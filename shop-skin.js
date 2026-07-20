@@ -1254,9 +1254,32 @@
       '<div style="font-size:17px;font-weight:bold;margin-bottom:6px;">🔒 本站商品限會員瀏覽</div>' +
       '<div style="margin-bottom:14px;">加入會員（免費）並登入後，即可瀏覽全部商品與會員價</div>' +
       '<a href="' + MEMBER + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#e8590c;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">➕ 加入會員</a>' +
-      '<a href="' + LOGIN + '&http_ref=' + encodeURIComponent(location.pathname + location.search) + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
+      '<a href="' + LOGIN + '" id="gp-permguide-login" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
       '<div style="margin-top:12px;font-size:13px;color:#888;">有問題請加 LINE 詢問 <a href="' + LINE + '" style="color:#2f9e44;font-weight:bold;">@562spzag</a></div>';
     nodata.parentNode.insertBefore(guide, nodata.nextSibling);
+    // 按登入前存「回程票根」：登入完成落回首頁時，皮膚自動送回這個商品頁
+    try {
+      var loginBtn = document.getElementById('gp-permguide-login');
+      loginBtn.addEventListener('click', function () {
+        try { localStorage.setItem('grand_return_to', JSON.stringify({ url: location.pathname + location.search, ts: Date.now() })); } catch (e) {}
+      });
+    } catch (e) {}
+  }
+
+  // 登入回程：mem_login_pop 獨立頁不載皮膚，http_ref 帶不進去；
+  // 改用 localStorage 票根，登入後落回首頁(/)時自動彈回原商品頁。只跳一次、10 分鐘過期。
+  function applyReturnTicket() {
+    try {
+      var raw = localStorage.getItem('grand_return_to');
+      if (!raw) return;
+      var t = JSON.parse(raw);
+      var fresh = t && t.url && t.url.charAt(0) === '/' && (Date.now() - t.ts) < 10 * 60 * 1000;
+      if (!fresh) { localStorage.removeItem('grand_return_to'); return; }
+      if ((location.pathname === '/' || location.pathname === '/member/my_order') && t.url !== location.pathname) {
+        localStorage.removeItem('grand_return_to');
+        location.replace(t.url);
+      }
+    } catch (e) {}
   }
 
   // 頁尾「執行速度：x 秒 Powered by SHOP2000」→ 標準英文版權宣告
@@ -1284,6 +1307,7 @@
 
   function run() {
     initializeMemberCategoryCache();
+    applyReturnTicket();
     ensureViewport();
     // 店長已登入 → 皮膚讓位，直接用舊系統管理（含工具列較晚載入，下方再輪詢補偵測）
     if (isBoss()) { bossStepAside(); return; }
