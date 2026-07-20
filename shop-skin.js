@@ -40,9 +40,11 @@
     try{
       if(typeof show_hs === 'function'){
         show_hs('iframe','/shop2000_prog/member/mem_login_pop.aspx?vdir=grand','320','400');
+        startLoginWatch(); // 原生彈窗登入後的跳轉也可能壞，皮膚自己偵測+刷新兜底
         return false;
       }
     }catch(e){}
+    if (openLoginOverlay()) return false; // 獨立登入頁對子網域商店是壞的，一律改本頁彈窗
     location.href = LOGIN;
     return false;
   }
@@ -1238,6 +1240,45 @@
     mw.parentNode.insertBefore(bar, mw);
   }
 
+  // 登入彈窗（iframe 疊在本頁）：獨立開 mem_login_pop 登入後的跳轉對子網域商店是壞的
+  // （vdir 空→裸頁「帳號格式錯誤」；vdir=grand→404 page），所以登入一律留在本頁，
+  // 由皮膚輪詢偵測登入成功後自動刷新。
+  function openLoginOverlay() {
+    try {
+      if (document.getElementById('gp-login-overlay')) return true;
+      var ov = document.createElement('div');
+      ov.id = 'gp-login-overlay';
+      ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
+      ov.innerHTML =
+        '<div style="position:relative;width:320px;max-width:92vw;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#2b8a3e;color:#fff;font-weight:bold;">會員登入<span id="gp-login-close" style="cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">✕</span></div>' +
+        '<iframe src="' + LOGIN + '" style="width:100%;height:290px;border:0;display:block;background:#fff;"></iframe>' +
+        '<div style="padding:6px 10px;font-size:12px;color:#555;border-top:1px solid #eee;">登入成功後，本頁會自動更新顯示商品</div></div>';
+      document.body.appendChild(ov);
+      document.getElementById('gp-login-close').onclick = function () { try { ov.parentNode.removeChild(ov); } catch (e) {} };
+      startLoginWatch();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // 每 2.5 秒重抓本頁，紅字消失＝已登入 → 自動刷新（最多 6 分鐘）
+  function startLoginWatch() {
+    if (window.__gpLoginWatch) return;
+    var tries = 0;
+    window.__gpLoginWatch = setInterval(function () {
+      if (++tries > 144) { clearInterval(window.__gpLoginWatch); window.__gpLoginWatch = null; return; }
+      fetch(location.href, { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.text(); })
+        .then(function (t) {
+          if (t.indexOf('本分類需有權限方能瀏覽') === -1) {
+            clearInterval(window.__gpLoginWatch); window.__gpLoginWatch = null;
+            location.reload();
+          }
+        })
+        .catch(function () {});
+    }, 2500);
+  }
+
   // 未登入撞到「本分類需有權限方能瀏覽」紅字死路 → 插入會員引導區（手機電腦通用）
   function buildPermissionGuide() {
     if (document.getElementById('gp-permguide')) return;
@@ -1257,11 +1298,13 @@
       '<a href="' + LOGIN + '" id="gp-permguide-login" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
       '<div style="margin-top:12px;font-size:13px;color:#888;">有問題請加 LINE 詢問 <a href="' + LINE + '" style="color:#2f9e44;font-weight:bold;">@562spzag</a></div>';
     nodata.parentNode.insertBefore(guide, nodata.nextSibling);
-    // 按登入前存「回程票根」：登入完成落回首頁時，皮膚自動送回這個商品頁
+    // 登入不離開本頁：開 iframe 彈窗，皮膚偵測登入成功後自動刷新
     try {
       var loginBtn = document.getElementById('gp-permguide-login');
-      loginBtn.addEventListener('click', function () {
-        try { localStorage.setItem('grand_return_to', JSON.stringify({ url: location.pathname + location.search, ts: Date.now() })); } catch (e) {}
+      loginBtn.addEventListener('click', function (e) {
+        if (openLoginOverlay()) { e.preventDefault(); return; }
+        // 彈窗失敗才退回獨立頁，並留票根讓登入後有機會回來
+        try { localStorage.setItem('grand_return_to', JSON.stringify({ url: location.pathname + location.search, ts: Date.now() })); } catch (er) {}
       });
     } catch (e) {}
   }
