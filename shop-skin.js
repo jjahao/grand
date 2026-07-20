@@ -80,9 +80,14 @@
           // 因此登入表單一出現就先清掉上一位會員的分類快取，避免權限清單交叉沿用。
           clearMemberCategoryCache();
           var http = form.elements['http_ref'];
-          if (http && !http.value) http.value = '/';
+          if (http && !http.value) {
+            // 優先用網址帶來的 http_ref（引導卡登入鈕會帶原商品頁路徑），登入後直接回去
+            var m = location.search.match(/[?&]http_ref=([^&]+)/);
+            var ref = m ? decodeURIComponent(m[1]) : '';
+            http.value = (ref && ref.charAt(0) === '/') ? ref : '/';
+          }
           var vdir = form.elements['vdir'];
-          if (vdir && !vdir.value) vdir.value = '';
+          if (vdir && !vdir.value) vdir.value = 'grand'; // 空值會導致登入後「帳號格式錯誤」
           if (!form.dataset.grandMemberCategoryResetBound) {
             form.dataset.grandMemberCategoryResetBound = '1';
             form.addEventListener('submit', clearMemberCategoryCache);
@@ -1249,7 +1254,7 @@
       '<div style="font-size:17px;font-weight:bold;margin-bottom:6px;">🔒 本站商品限會員瀏覽</div>' +
       '<div style="margin-bottom:14px;">加入會員（免費）並登入後，即可瀏覽全部商品與會員價</div>' +
       '<a href="' + MEMBER + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#e8590c;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">➕ 加入會員</a>' +
-      '<a href="' + LOGIN + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
+      '<a href="' + LOGIN + '&http_ref=' + encodeURIComponent(location.pathname + location.search) + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
       '<div style="margin-top:12px;font-size:13px;color:#888;">有問題請加 LINE 詢問 <a href="' + LINE + '" style="color:#2f9e44;font-weight:bold;">@562spzag</a></div>';
     nodata.parentNode.insertBefore(guide, nodata.nextSibling);
   }
