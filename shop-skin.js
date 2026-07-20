@@ -14,7 +14,7 @@
   var LINE = 'https://line.me/ti/p/~@562spzag';
   var MEMBER = 'https://grand.shop2000.com.tw/member'; // 會員中心
   var ORDER = 'https://grand.shop2000.com.tw/member/my_order'; // 訂單歷史
-  var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir='; // 會員登入頁
+  var LOGIN = 'https://grand.shop2000.com.tw/shop2000_prog/member/mem_login_pop.aspx?vdir=grand'; // 會員登入頁（vdir 必填，空值會導致登入後「帳號格式錯誤」）
   var MEMBER_CAT_CACHE_VERSION = '20260714a';
   var MEMBER_CAT_CACHE_KEYS = ['grand_main_cats', 'grand_virtual_cats', 'grand_virtual_active'];
 
@@ -39,7 +39,7 @@
     }
     try{
       if(typeof show_hs === 'function'){
-        show_hs('iframe','/shop2000_prog/member/mem_login_pop.aspx?vdir=','320','400');
+        show_hs('iframe','/shop2000_prog/member/mem_login_pop.aspx?vdir=grand','320','400');
         return false;
       }
     }catch(e){}
@@ -1233,6 +1233,50 @@
     mw.parentNode.insertBefore(bar, mw);
   }
 
+  // 未登入撞到「本分類需有權限方能瀏覽」紅字死路 → 插入會員引導區（手機電腦通用）
+  function buildPermissionGuide() {
+    if (document.getElementById('gp-permguide')) return;
+    var nodata = null;
+    var cands = document.querySelectorAll('div.nodata');
+    for (var i = 0; i < cands.length; i++) {
+      if (cands[i].textContent.indexOf('本分類需有權限方能瀏覽') > -1) { nodata = cands[i]; break; }
+    }
+    if (!nodata) return;
+    var guide = document.createElement('div');
+    guide.id = 'gp-permguide';
+    guide.style.cssText = 'max-width:420px;margin:18px auto 24px auto;padding:20px 16px;background:#fff8f0;border:1px solid #e8d9c5;border-radius:12px;text-align:center;font-size:15px;line-height:1.7;color:#333;';
+    guide.innerHTML =
+      '<div style="font-size:17px;font-weight:bold;margin-bottom:6px;">🔒 本站商品限會員瀏覽</div>' +
+      '<div style="margin-bottom:14px;">加入會員（免費）並登入後，即可瀏覽全部商品與會員價</div>' +
+      '<a href="' + MEMBER + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#e8590c;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">➕ 加入會員</a>' +
+      '<a href="' + LOGIN + '" style="display:inline-block;margin:4px 6px;padding:12px 22px;background:#1c7ed6;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">👤 會員登入</a>' +
+      '<div style="margin-top:12px;font-size:13px;color:#888;">有問題請加 LINE 詢問 <a href="' + LINE + '" style="color:#2f9e44;font-weight:bold;">@562spzag</a></div>';
+    nodata.parentNode.insertBefore(guide, nodata.nextSibling);
+  }
+
+  // 頁尾「執行速度：x 秒 Powered by SHOP2000」→ 標準英文版權宣告
+  function fixFooterCopyright() {
+    var lgs = document.getElementsByTagName('lg');
+    for (var i = 0; i < lgs.length; i++) {
+      if (lgs[i].textContent === '執行速度') {
+        var line = lgs[i].parentNode;
+        line.innerHTML = 'Copyright © ' + new Date().getFullYear() + ' GRAND天倉. All Rights Reserved.';
+        line.style.cssText += ';font-size:12px;color:#555;padding:10px 0;';
+        return;
+      }
+    }
+  }
+
+  // 紅字與頁尾都可能較晚出現，輪詢 ~8 秒補上
+  function watchGuideAndFooter() {
+    buildPermissionGuide(); fixFooterCopyright();
+    var tries = 0;
+    var iv = setInterval(function () {
+      buildPermissionGuide(); fixFooterCopyright();
+      if (tries++ > 16) clearInterval(iv);
+    }, 500);
+  }
+
   function run() {
     initializeMemberCategoryCache();
     ensureViewport();
@@ -1245,6 +1289,7 @@
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
+    watchGuideAndFooter();
     // 店長工具列常較晚載入：偵測到就讓位（最多監看 ~8 秒）
     var tries = 0;
     var iv = setInterval(function () {
