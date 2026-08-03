@@ -297,7 +297,8 @@
       '#gh-foot{text-align:center;color:#565959;font-size:12.5px;line-height:1.9;padding:26px 18px;border-top:1px solid #eee}',
       '#gh-foot b{color:#0F1111}',
       '#gh-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111!important;font-weight:800;font-size:16px;padding:14px 34px;border-radius:28px;box-shadow:0 8px 24px rgba(255,153,0,.45);text-decoration:none;white-space:nowrap}',
-      '#gh-fab:active{transform:translateX(-50%) scale(.97)}'
+      '#gh-fab:active{transform:translateX(-50%) scale(.97)}',
+      '#gh-copy{text-align:center;color:#555;font-size:12px;padding:10px 18px 88px;clear:both}'
     ].join('');
     (document.head || document.documentElement).appendChild(css);
   }
@@ -1406,25 +1407,52 @@
     } catch (e) {}
   }
 
+  function copyrightText() {
+    return 'Copyright © ' + new Date().getFullYear() + ' 日本天倉. All Rights Reserved.';
+  }
+
   // 頁尾「執行速度：x 秒 Powered by SHOP2000」→ 標準英文版權宣告
   function fixFooterCopyright() {
+    var done = document.querySelector('[data-gh-copy]');
+    if (done) return done;
     var lgs = document.getElementsByTagName('lg');
     for (var i = 0; i < lgs.length; i++) {
       if (lgs[i].textContent === '執行速度') {
         var line = lgs[i].parentNode;
-        line.innerHTML = 'Copyright © ' + new Date().getFullYear() + ' GRAND天倉. All Rights Reserved.';
+        line.innerHTML = copyrightText();
         line.style.cssText += ';font-size:12px;color:#555;padding:10px 0;';
-        return;
+        line.setAttribute('data-gh-copy', '1');
+        return line;
       }
+    }
+    return null;
+  }
+
+  // 每一頁最底都要有版權宣告。原生那行在首頁是藏在 main_width 裡（display:none）
+  // 看不到，其他頁也可能整個沒有 —— 看不到就自己補一條在 body 最後。
+  function ensureFooterCopyright() {
+    var native = fixFooterCopyright();
+    var own = document.getElementById('gh-copy');
+    if (native && native.offsetParent !== null) {
+      if (own && own.parentNode) own.parentNode.removeChild(own);
+      return;
+    }
+    if (!own) {
+      own = document.createElement('div');
+      own.id = 'gh-copy';
+      own.textContent = copyrightText();
+      document.body.appendChild(own);
+    } else if (own !== document.body.lastElementChild) {
+      document.body.appendChild(own); // 別人又往 body 加東西時，維持在最底
     }
   }
 
   // 紅字與頁尾都可能較晚出現，輪詢 ~8 秒補上
   function watchGuideAndFooter() {
-    buildPermissionGuide(); fixFooterCopyright();
+    buildPermissionGuide(); ensureFooterCopyright();
     var tries = 0;
     var iv = setInterval(function () {
-      buildPermissionGuide(); fixFooterCopyright();
+      buildPermissionGuide(); ensureFooterCopyright();
       if (tries++ > 16) clearInterval(iv);
     }, 500);
   }
