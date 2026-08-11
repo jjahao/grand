@@ -605,6 +605,11 @@
   var GCATS=[{"i":"681206","n":"迪士尼","s":[["1541427","11/10新品-米奇雪精靈系列",55],["1541022","11/4新品-冬季系列",41],["1530358","8/28新品-達菲鳥舞落葉系列",38],["1523064","7/3新品-達菲甜甜圈系列",24],["1518357","6/5新品",35],["1518356","6/3新品",12],["1518355","達菲20週年系列",57],["1519704","其他",1187]]},{"i":"653720","n":"日本好市多","s":[["1364630","藥品/保健類",304],["1364631","零食類",374],["1364632","食品/酒類",427],["1364633","生活用品類",510],["1364634","衣著類",86],["1364635","美妝用品類",113],["1364636","文具類",34],["1364637","沐浴類",57]]},{"i":"654002","n":"便利商店","s":[["1365721","7-11",772],["1365722","family mart",176],["1365723","lawson",35]]},{"i":"653722","n":"量販店","s":[["1364642","零食類",915],["1364643","調味料",99],["1364644","糖果/巧克力",226],["1364645","其他零嘴小吃",213],["1402772","酒類",2]]},{"i":"653718","n":"MDM批發","s":[["1536504","DHC保健食品",5],["1450733","調味料",6],["1579264","清潔用品",18],["1450734","防蚊防蟲",16],["1450730","食品零食",222],["1450731","美妝・美妝小物",53],["1450729","入浴球",9],["1463220","瑪利歐系列",19],["1464923","OK繃系列",4],["1464918","三麗鷗系列",27],["1464921","寶可夢系列",3],["1463222","吉伊卡哇系列",60],["1463225","星之卡比系列",0],["1464919","森林家族系列",0],["1463226","トミカ玩具車",0],["1463227","麵包超人系列",29],["1463224","盒玩",0],["1450732","其它",182]]},{"i":"653726","n":"日本藥妝","s":[["1364650","日本處方簽專區",53],["1364651","藥品類",229],["1528345","Atomy",14]]},{"i":"713983","n":"茅乃舍","s":[]},{"i":"654004","n":"百貨禮盒","s":[["1375358","小倉山莊",33],["1559106","GRAMERCY NEWYORK",9],["1439404","GOD BLESS BUTTER 神之手",3],["1415451","GALLETE au BEURRE",17],["1415450","NY紐約起司蛋捲",8],["1375359","Tulip Rose",10],["1376695","YOKU MOKU",37],["1375360","Audrey 花束餅乾",19],["1376693","Sugar Butter Tree",15],["1376694","鎌倉五郎(半月)",4],["1376696","GATEAU FESTA HARADA",9],["1376690","東京牛奶起司工廠 Tokyo Milk cheese factory",7],["1415453","AND THE FRIET薯條餅乾",13],["1375362","上野風月堂/東京風月堂/神戶風月堂",42],["1375363","桂新堂",9],["1376847","福砂屋",7],["1394180","東京芭娜娜/迪士尼聯名",28],["1428921","FRANCAJS",7],["1375361","其他品牌",216],["1376697","名古屋蝦餅",3],["1439407","Mary's 巧克力",13],["1439411","Number sugar",5],["1439412","一創堂",6],["1439413","Sable Michelle 周遊世界餅乾罐",25],["1439414","銀座菊廼舎",4],["1439415","銀座西",5],["1439416","東京巧克力工廠",4],["1439450","Press Butter Sand",13],["1439452","PARIS BUTTER CHOCOLAT",7],["1439453","神戶布丁",4],["1439454","BENIYA 松鼠核桃",2],["1439457","CoroCoro waffle cube",4],["1439458","Cream cheese cake",3],["1439487","TOKYO ひよこ",2],["1439488","captain sweets burger",13],["1439495","Tokyo Corne Fleuri玫瑰花巧克力",2],["1439496","Sabrina小花酥餅",16],["1439503","BRULEE MERIZE布蕾",7],["1459558","BUTTER STATE's",10],["1459559","Apple & Butter",3],["1459562","喫茶店",8],["1459564","calbee",23],["1552628","TOKYO RUSK",8],["1552656","Colombin",4],["1571623","RAMEN CLUB 拉麵餅乾",6]]},{"i":"684454","n":"台北現貨","s":[]}];
   // 多關鍵字過濾狀態：null = 不過濾；array = [token1, token2, ...]（全部 lowercase，AND 匹配）
   var gpFilter = null;
+  var gpRawTokens = [];
+  var gpAllItems = [];
+  var gpSearchBusy = false;
+  var gpSearchComplete = true;
+  var gpSearchStatus = '';
   var gpSearchScopeNorm = '';
   function gpScopeText() {
     var parts = [];
@@ -626,6 +631,23 @@
       seen[t] = 1;
       return true;
     });
+  }
+  function gpRawTokenize(v) {
+    var seen = {};
+    return (v || '').trim().split(/[\s　]+/).filter(Boolean).filter(function (t) {
+      if (seen[t]) return false; seen[t] = 1; return true;
+    });
+  }
+  function gpQueryVariants(raw) {
+    var out = [], seen = {};
+    function add(v) { v = String(v || '').trim(); if (v && !seen[v]) { seen[v] = 1; out.push(v); } }
+    add(raw); add(gpNorm(raw));
+    var nr = gpNorm(raw), cr = gpCompact(nr);
+    for (var i = 0; i < GP_SYN.length; i++) {
+      var hit = GP_SYN[i].some(function (v) { var n = gpNorm(v); return n === nr || gpCompact(n) === cr; });
+      if (hit) GP_SYN[i].forEach(add);
+    }
+    return out;
   }
   function gpItemHaystack(p) {
     return gpNorm([
@@ -696,8 +718,9 @@
       else { var items = gatherProducts(); renderPrettyGrid(items); refreshSearchBar(); }
       return;
     }
+    gpRawTokens = gpRawTokenize(v);
     gpFilter = gpTokenize(v);
-    var firstKw = gpFilter[0] || v;
+    var firstKw = gpRawTokens[0] || v;
     var gpqParam = gpFilter.length > 1 ? ('&gpq=' + encodeURIComponent(v)) : '';
     if (inCat) {
       // 分類內 → 用 kwpcls=y 搜該分類全部商品（不只當頁 40 筆）
@@ -946,36 +969,94 @@
     }
     return max;
   }
+  function gpNativeTotal(doc) {
+    var rc = doc.querySelector('[name="RecordCount"],#RecordCount');
+    var n = rc ? parseInt(rc.value || rc.getAttribute('value'), 10) : NaN;
+    if (!isNaN(n)) return n;
+    var text = (doc.body && doc.body.innerText) || '';
+    var m = text.match(/共\s*([\d,]+)\s*筆/);
+    return m ? parseInt(m[1].replace(/,/g, ''), 10) : 0;
+  }
+  function gpQueryUrl(keyword) {
+    var u = new URL(location.href);
+    u.searchParams.set('kw', keyword);
+    ['gpq', 'gpdebug', 'to_p', 'p'].forEach(function (k) { u.searchParams.delete(k); });
+    return u.pathname + '?' + u.searchParams.toString();
+  }
+  function gpPostBody(doc, pageNo, total) {
+    var body = new URLSearchParams(), form = doc.querySelector('form#form1,form[name="form1"]');
+    if (form) [].forEach.call(form.elements || [], function (el) {
+      if (!el.name || el.disabled || ((el.type === 'checkbox' || el.type === 'radio') && !el.checked)) return;
+      body.append(el.name, el.value || '');
+    });
+    body.set('fromForm1', 'Y'); body.set('p', String(pageNo)); body.set('RecordCount', String(total));
+    return body.toString();
+  }
+  function gpMergeItems(target, items) {
+    var seen = {}; target.forEach(function (p) { seen[p.psn] = 1; });
+    items.forEach(function (p) { if (!seen[p.psn]) { seen[p.psn] = 1; target.push(p); } });
+    return target;
+  }
+  function gpDelay() { return new Promise(function (resolve) { setTimeout(resolve, 280); }); }
   var GP_MAX_FETCH_PAGES = 15; // 節流上限：避免多關鍵字搜尋時把 Shop2000 整批分頁掃光，觸發「請放慢操作速度」限流
   // 多關鍵字搜尋時，原生引擎只用第一個字搜，命中可能跨多個原生分頁；
   // 這裡把剩下的分頁一頁一頁抓回來（同網域 fetch，帶 cookie），合併後再做 AND 過濾，才不會漏掉沒出現在第 1 頁的商品。
   // 2026-06-26 James 核定加入。
   function gpExpandMultiPage(baseItems) {
-    var max = gpMaxNativePage(document);
-    if (max <= 1) return Promise.resolve(baseItems);
-    var capped = Math.min(max, GP_MAX_FETCH_PAGES);
-    var cleanUrl = location.href.replace(/[?&]to_p=\d+/, '');
-    var sep = cleanUrl.indexOf('?') >= 0 ? '&' : '?';
-    var all = baseItems.slice(), seen = {};
-    baseItems.forEach(function (p) { seen[p.psn] = 1; });
-    var chain = Promise.resolve();
-    for (var pg = 2; pg <= capped; pg++) {
-      (function (pageNo) {
-        chain = chain.then(function () {
-          return new Promise(function (resolve) { setTimeout(resolve, 280); }); // 節流間隔
-        }).then(function () {
-          return fetch(cleanUrl + sep + 'to_p=' + pageNo, { credentials: 'same-origin' })
-            .then(function (r) { return r.text(); })
-            .then(function (html) {
-              var doc = new DOMParser().parseFromString(html, 'text/html');
-              var items = gpParseDoc(doc);
-              items.forEach(function (it) { if (!seen[it.psn]) { seen[it.psn] = 1; all.push(it); } });
-              gpDiag('expand-page', { page: pageNo, count: items.length, total: all.length });
-            }).catch(function () {});
+    var raws = gpRawTokens.length ? gpRawTokens : gpFilter.slice();
+    var probes = [], chain = Promise.resolve();
+    gpSearchBusy = true; gpSearchComplete = false; gpAllItems = baseItems.slice();
+    gpSearchStatus = '搜尋中…正在比較關鍵字範圍'; renderPrettyGrid(gpAllItems);
+    raws.forEach(function (raw, tokenIndex) {
+      gpQueryVariants(raw).forEach(function (variant) {
+        chain = chain.then(gpDelay).then(function () {
+          return fetch(gpQueryUrl(variant), { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            probes.push({ tokenIndex: tokenIndex, raw: raw, variant: variant, doc: doc, total: gpNativeTotal(doc), items: gpParseDoc(doc) });
+          });
         });
-      })(pg);
-    }
-    return chain.then(function () { return all; });
+      });
+    });
+    return chain.then(function () {
+      var groups = raws.map(function (raw, i) {
+        var ps = probes.filter(function (p) { return p.tokenIndex === i; });
+        return { raw: raw, probes: ps, total: ps.reduce(function (n, p) { return n + p.total; }, 0) };
+      });
+      groups.sort(function (a, b) { return a.total - b.total; });
+      var anchor = groups[0], budget = Math.max(0, GP_MAX_FETCH_PAGES - anchor.probes.length), scanned = 0, advertised = anchor.total;
+      gpAllItems = [];
+      gpDiag('anchor-selected', { anchor: anchor.raw, total: anchor.total, candidates: groups.map(function (g) { return { token: g.raw, total: g.total }; }) });
+      var pages = [], maxByProbe = [];
+      anchor.probes.forEach(function (p) {
+        scanned += p.items.length; gpMergeItems(gpAllItems, p.items);
+        maxByProbe.push({ probe: p, max: Math.max(gpMaxNativePage(p.doc), Math.ceil(p.total / 40)) });
+      });
+      for (var pg = 2; budget > 0; pg++) {
+        var added = false;
+        maxByProbe.forEach(function (x) { if (budget > 0 && pg <= x.max) { pages.push({ probe: x.probe, page: pg }); budget--; added = true; } });
+        if (!added) break;
+      }
+      gpSearchStatus = '搜尋中… 已掃描 ' + scanned + '／' + advertised + ' 筆'; renderPrettyGrid(gpAllItems);
+      var work = Promise.resolve();
+      pages.forEach(function (job) {
+        work = work.then(gpDelay).then(function () {
+          return fetch(gpQueryUrl(job.probe.variant), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: gpPostBody(job.probe.doc, job.page, job.probe.total) })
+            .then(function (r) { return r.text(); }).then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html'), items = gpParseDoc(doc);
+              scanned += items.length; gpMergeItems(gpAllItems, items);
+              gpSearchStatus = '搜尋中… 已掃描 ' + scanned + '／' + advertised + ' 筆';
+              gpDiag('expand-page', { keyword: job.probe.variant, page: job.page, count: items.length, merged: gpAllItems.length }); renderPrettyGrid(gpAllItems);
+            });
+        });
+      });
+      return work.then(function () {
+        gpSearchBusy = false; gpSearchComplete = true;
+        gpSearchStatus = scanned < advertised ? ('已掃描前 ' + scanned + ' 筆（共 ' + advertised + ' 筆），請再加一個關鍵字縮小範圍') : ('已掃描 ' + scanned + ' 筆');
+        renderPrettyGrid(gpAllItems); return gpAllItems;
+      });
+    }).catch(function (err) {
+      gpSearchBusy = false; gpSearchComplete = true; gpSearchStatus = '搜尋暫時中斷，請稍後再試'; gpDiag('expand-error', String(err)); renderPrettyGrid(gpAllItems); return gpAllItems;
+    });
   }
   function gatherProducts() {
     return gpParseDoc(document);
@@ -1142,6 +1223,11 @@
     var grid = document.getElementById('gp-grid'); if (!grid) return;
     items = gpApplyFilter(items);
     gpDiag('render-grid', { items: items.length, filter: gpFilter, scope: gpSearchScopeNorm });
+    var status = document.getElementById('gp-search-status'); if (status) status.textContent = gpSearchStatus;
+    if (!items.length && gpFilter && !gpSearchComplete) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;color:#666;font-size:14px;">搜尋中…</div>';
+      gpSyncCount(); return;
+    }
     if (!items.length && gpFilter) {
       grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;color:#666;font-size:14px;">本分類內找不到符合「' + gpEsc(gpFilter.join(' ')) + '」的商品</div>';
       gpSyncCount();
@@ -1183,7 +1269,10 @@
       var gpqM = location.search.match(/[?&]gpq=([^&]*)/);
       var kwM  = location.search.match(/[?&]kw=([^&]*)/);
       var raw  = gpqM ? gpqM[1] : (kwM ? kwM[1] : '');
-      if (raw) gpFilter = gpTokenize(decodeURIComponent(raw.replace(/\+/g, ' ')));
+      if (raw) {
+        var decoded = decodeURIComponent(raw.replace(/\+/g, ' '));
+        gpRawTokens = gpRawTokenize(decoded); gpFilter = gpTokenize(decoded);
+      }
     }
     gpSearchScopeNorm = gpNorm(gpScopeText());
     var items = gatherProducts();
@@ -1264,7 +1353,7 @@
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
       gpSearchBar() + gpCatNav(liveCats) +
-      '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
+      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
@@ -1370,10 +1459,15 @@
     // 手打數字後立刻規格化(失焦/按Enter)
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
+    gpAllItems = items.slice();
+    gpSearchComplete = !gpFilter;
+    if (gpFilter && gpFilter.length > 1) {
+      [].forEach.call(document.querySelectorAll('[to_p]'), function (el) { var p = el.closest('ul,ol,table,div'); if (p) p.style.setProperty('display', 'none', 'important'); });
+    }
     renderPrettyGrid(items);
     // 多關鍵字搜尋（gpFilter 超過1個字）→ 背景把原生其餘分頁也抓回來合併過濾，避免漏掉不在第1頁的商品
-    if (gpFilter && gpFilter.length > 1) {
-      gpExpandMultiPage(items).then(function (allItems) { renderPrettyGrid(allItems); });
+    if (gpFilter) {
+      gpExpandMultiPage(items);
     }
     // 桌面拖曳橫向滾動分類列（Windows 無觸控滑修補）
     [].forEach.call(wrap.querySelectorAll('.gc-mainrow, .gc-subrow'), attachDragScroll);
@@ -1386,7 +1480,8 @@
       clearTimeout(t); t = setTimeout(function () {
         var pls2 = document.querySelectorAll('[id^="plist_tb"]');
         for (var k = 0; k < pls2.length; k++) pls2[k].style.setProperty('display', 'none', 'important');
-        var it = gatherProducts(); if (it.length) renderPrettyGrid(it);
+        var it = gatherProducts();
+        if (it.length) { gpMergeItems(gpAllItems, it); renderPrettyGrid(gpAllItems); }
       }, 300);
     });
     try { obs.observe(watch, { childList: true, subtree: true }); } catch (e) {}
