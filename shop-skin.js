@@ -1255,6 +1255,15 @@
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
     items = gpApplyFilter(items);
+    // Shop2000 的 psn 是商品建立流水號；搜尋結果跨頁合併後，統一讓最新上架的商品排前面。
+    // 只影響搜尋，不改動一般分類頁原本的排序。
+    if (gpFilter && gpFilter.length) {
+      items = items.slice().sort(function (a, b) {
+        var ap = parseInt(a.psn, 10), bp = parseInt(b.psn, 10);
+        if (isNaN(ap) || isNaN(bp)) return 0;
+        return bp - ap;
+      });
+    }
     gpDiag('render-grid', { items: items.length, filter: gpFilter, scope: gpSearchScopeNorm });
     var status = document.getElementById('gp-search-status'); if (status) status.textContent = gpSearchStatus;
     if (!items.length && gpFilter && !gpSearchComplete) {
