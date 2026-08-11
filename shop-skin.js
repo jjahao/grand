@@ -158,6 +158,14 @@
       '#gp-topbar a:last-child{border-right:0}',
       '#gp-topbar a:hover{color:#FFD814!important}',
       '#gp-topbar a.tb-home{color:#fff!important;font-weight:700}',
+      /* ISSUE-106 R2：只套用在皮膚自建的列表卡片 */
+      '.gp-track{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);border:1px solid #e3e6e6;box-shadow:0 1px 4px rgba(0,0,0,.12);cursor:pointer;padding:0;z-index:20;display:flex;align-items:center;justify-content:center;transition:transform .15s ease,border-color .15s,background .15s}',
+      '.gp-track:before{content:"";position:absolute;width:44px;height:44px;left:-5px;top:-5px}',
+      '.gp-track:hover{transform:scale(1.06)}.gp-track svg{width:21px;height:21px;pointer-events:none}',
+      '.gp-track.on{background:#FFF3F1;border-color:#F4C7C2}.gp-track.on path{fill:#E23B2E;stroke:#E23B2E}',
+      '.gp-track.pop{animation:gpTrackPop .22s ease}@keyframes gpTrackPop{50%{transform:scale(1.25)}}',
+      '#gp-track-toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:10020;background:#232F3E;color:#fff;border-radius:24px;padding:10px 16px;box-shadow:0 5px 18px rgba(0,0,0,.28);font-size:13px;white-space:nowrap}',
+      '#gp-track-toast a{color:#FFD814!important;font-weight:800;margin-left:10px}',
       /* ---- 配色（暖白安心底 + 珊瑚橙催單 + 綠信任 + 金精緻；更亮更喜悅） ---- */
       ':root{--bg:#FFF7EF;--ink:#2B201A;--ink2:#8A7A6C;--buy:#FF5B2E;--buy2:#FF8A5B;--line:#06C755;--gold:#CDA349;--card:#fff;--hair:#F1E7D9;--wine:#2E1C24}',
       'body,td,th,select,input,textarea,button,a{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif!important}',
@@ -1134,6 +1142,93 @@
     var g = document.querySelector('#buyGs'), c = document.getElementById('gp-cnt');
     if (c) c.textContent = g ? (g.innerText.trim() || '0') : '0';
   }
+  var GP_TRACK_CACHE = 'grand_tracking_v1';
+  var GP_TRACK_PENDING = 'grand_tracking_pending';
+  var gpTracked = {};
+  var gpTrackPromise = null;
+  function gpTrackSvg() {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.2 3.5 8.8A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 8.5 1.1c0 6.4-8.5 11.7-8.5 11.7Z" fill="none" stroke="#565959" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+  }
+  function gpTrackSet(psn, on) {
+    psn = String(psn);
+    if (on) gpTracked[psn] = 1; else delete gpTracked[psn];
+    try { sessionStorage.setItem(GP_TRACK_CACHE, JSON.stringify({ ts: Date.now(), psns: Object.keys(gpTracked) })); } catch (e) {}
+    [].forEach.call(document.querySelectorAll('.gp-track[data-psn="' + psn.replace(/"/g, '') + '"]'), function (b) {
+      b.classList.toggle('on', !!on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
+      b.setAttribute('aria-label', label); b.title = label;
+    });
+  }
+  function gpTrackToast(message, withLink) {
+    var old = document.getElementById('gp-track-toast'); if (old) old.remove();
+    var t = document.createElement('div'); t.id = 'gp-track-toast'; t.textContent = message;
+    if (withLink) { var a = document.createElement('a'); a.href = '/member/my_box'; a.textContent = '查看'; t.appendChild(a); }
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+  }
+  function gpTrackingLoginResponse(r, html) {
+    return /\/shop2000_prog\/member\/mem_login/i.test((r && r.url) || '') || /form_login_mem|id=["']?pwboss/i.test(html || '');
+  }
+  function gpLoadTracking() {
+    if (gpTrackPromise) return gpTrackPromise;
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(GP_TRACK_CACHE) || 'null');
+      if (cached && Date.now() - cached.ts < 90000 && Array.isArray(cached.psns)) {
+        gpTracked = {}; cached.psns.forEach(function (p) { gpTracked[String(p)] = 1; });
+        gpTrackPromise = Promise.resolve(gpTracked); return gpTrackPromise;
+      }
+    } catch (e) {}
+    gpTrackPromise = fetch('/member/my_box', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) {
+      return r.text().then(function (html) {
+        if (!r.ok || gpTrackingLoginResponse(r, html)) throw new Error('login');
+        var doc = new DOMParser().parseFromString(html, 'text/html'), next = {};
+        [].forEach.call(doc.querySelectorAll('img.pimg[psn]'), function (im) { next[String(im.getAttribute('psn'))] = 1; });
+        gpTracked = next;
+        try { sessionStorage.setItem(GP_TRACK_CACHE, JSON.stringify({ ts: Date.now(), psns: Object.keys(gpTracked) })); } catch (e) {}
+        return gpTracked;
+      });
+    }).catch(function () { return gpTracked; });
+    return gpTrackPromise;
+  }
+  function gpTrackButton(psn) {
+    var on = !!gpTracked[String(psn)], label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
+    return '<button type="button" class="gp-track' + (on ? ' on' : '') + '" data-psn="' + gpEsc(psn) + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + label + '" title="' + label + '">' + gpTrackSvg() + '</button>';
+  }
+  function gpToggleTracking(psn, button) {
+    psn = String(psn || ''); if (!psn || (button && button.disabled)) return Promise.resolve(false);
+    var was = !!gpTracked[psn], want = !was;
+    gpTrackSet(psn, want);
+    if (button) { button.disabled = true; button.classList.remove('pop'); void button.offsetWidth; button.classList.add('pop'); }
+    return fetch('/member/my_box', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: (want ? 'psn=' : 'delsn=') + encodeURIComponent(psn)
+    }).then(function (r) {
+      return r.text().then(function (html) {
+        if (!r.ok) throw new Error('http');
+        if (gpTrackingLoginResponse(r, html)) {
+          gpTrackSet(psn, was);
+          try { sessionStorage.setItem(GP_TRACK_PENDING, JSON.stringify({ psn: psn, ts: Date.now() })); } catch (e) {}
+          openGrandLogin(); return false;
+        }
+        gpTrackToast(want ? '已加入追蹤清單' : '已從追蹤清單移除', want); return true;
+      });
+    }).catch(function () {
+      gpTrackSet(psn, was); gpTrackToast('加入失敗，請稍後再試', false); return false;
+    }).then(function (ok) { if (button) button.disabled = false; return ok; });
+  }
+  function gpResumePendingTracking() {
+    var p = null;
+    try { p = JSON.parse(sessionStorage.getItem(GP_TRACK_PENDING) || 'null'); } catch (e) {}
+    if (!p || !p.psn || Date.now() - p.ts > 10 * 60 * 1000) {
+      try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} return;
+    }
+    gpLoadTracking().then(function () {
+      if (gpTracked[String(p.psn)]) { try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} return; }
+      gpToggleTracking(String(p.psn)).then(function (ok) { if (ok) try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} });
+    });
+  }
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
     items = gpApplyFilter(items);
@@ -1152,7 +1247,7 @@
       var price = p.nt ? ('NT$' + p.nt + '<small> 起</small>') : '<small>詢價</small>';
       var full = p.img.replace(/-(\d+)\.jpg/, '-$1o.jpg');
       return '<div class="gp-card" data-psn="' + gpEsc(p.psn) + '">' +
-        '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy"></div>' +
+        '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy">' + gpTrackButton(p.psn) + '</div>' +
         '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
         '<div class="gp-dlv">日本直送・原裝到府</div>' +
         '<div class="gp-brief"></div>' +
@@ -1163,6 +1258,11 @@
     [].forEach.call(grid.querySelectorAll('.gp-card'), function (c) {
       var psn = c.getAttribute('data-psn'), r = gpRules[psn];
       if (r) gpApplyBriefToCard(c, r);
+    });
+    gpLoadTracking().then(function () {
+      [].forEach.call(grid.querySelectorAll('.gp-track'), function (b) {
+        var psn = b.getAttribute('data-psn'); gpTrackSet(psn, !!gpTracked[String(psn)]);
+      });
     });
     gpSyncCount();
   }
@@ -1205,7 +1305,7 @@
         '@media(min-width:760px){#gp-grid{grid-template-columns:repeat(4,1fr);gap:16px}}',
         '.gp-card{background:#fff;border:1px solid #e3e6e6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}',
         '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
-        '.gp-imw{padding:10px}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
+        '.gp-imw{padding:10px;position:relative}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
         '.gp-bd{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}',
         '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:55px}',
         '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
@@ -1318,6 +1418,8 @@
 
     // 事件委派
     wrap.addEventListener('click', function (e) {
+      var track = e.target.closest('.gp-track');
+      if (track) { e.preventDefault(); e.stopPropagation(); gpToggleTracking(track.getAttribute('data-psn'), track); return; }
       var im = e.target.closest('.im');
       if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
       var card = e.target.closest('.gp-card'); if (!card) return;
@@ -1429,6 +1531,7 @@
     bar.innerHTML =
       '<a class="tb-home" href="https://grand.shop2000.com.tw/">🏠 首頁</a>' +
       '<a href="' + ORDER + '">📋 查訂單</a>' +
+      '<a href="/member/my_box">♡ 追蹤清單</a>' +
       '<a href="' + LOGIN + '">👤 會員登入 ／ 加入會員</a>';
     mw.parentNode.insertBefore(bar, mw);
   }
@@ -1576,7 +1679,7 @@
     if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    else if (isProductListPage()) { buildProductTopbar(); tryPrettyList(); }
+    else if (isProductListPage()) { buildProductTopbar(); tryPrettyList(); gpResumePendingTracking(); }
     else buildMemberPanel();
     buildAdminEntry();
     fixCart();
