@@ -997,6 +997,20 @@
     items.forEach(function (p) { if (!seen[p.psn]) { seen[p.psn] = 1; target.push(p); } });
     return target;
   }
+  function gpSearchCacheKey() {
+    return 'grand_search_items_v7:' + location.pathname + ':' + gpRawTokens.join('|');
+  }
+  function gpLoadSearchCache() {
+    if (!gpRawTokens.length) return [];
+    try {
+      var c = JSON.parse(sessionStorage.getItem(gpSearchCacheKey()) || 'null');
+      return c && Date.now() - c.ts < 15 * 60 * 1000 && Array.isArray(c.items) ? c.items : [];
+    } catch (_) { return []; }
+  }
+  function gpSaveSearchCache(items) {
+    if (!gpRawTokens.length) return;
+    try { sessionStorage.setItem(gpSearchCacheKey(), JSON.stringify({ ts: Date.now(), items: items })); } catch (_) {}
+  }
   function gpDelay() { return new Promise(function (resolve) { setTimeout(resolve, 280); }); }
   var GP_MAX_FETCH_PAGES = 15; // 節流上限：避免多關鍵字搜尋時把 Shop2000 整批分頁掃光，觸發「請放慢操作速度」限流
   // 多關鍵字搜尋時，原生引擎只用第一個字搜，命中可能跨多個原生分頁；
@@ -1052,6 +1066,7 @@
       return work.then(function () {
         gpSearchBusy = false; gpSearchComplete = true;
         gpSearchStatus = scanned < advertised ? ('已掃描前 ' + scanned + ' 筆（共 ' + advertised + ' 筆），請再加一個關鍵字縮小範圍') : ('已掃描 ' + scanned + ' 筆');
+        gpSaveSearchCache(gpAllItems);
         renderPrettyGrid(gpAllItems); return gpAllItems;
       });
     }).catch(function (err) {
@@ -1276,6 +1291,7 @@
     }
     gpSearchScopeNorm = gpNorm(gpScopeText());
     var items = gatherProducts();
+    gpMergeItems(items, gpLoadSearchCache());
     if (items.length < 4 && !gpFilter) {
       gpDiag('skip-build', { reason: 'insufficient-items-no-query', items: items.length, url: location.href });
       return; // 商品還沒載好且沒有搜尋需求就先不做
