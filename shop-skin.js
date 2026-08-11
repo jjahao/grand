@@ -158,15 +158,6 @@
       '#gp-topbar a:last-child{border-right:0}',
       '#gp-topbar a:hover{color:#FFD814!important}',
       '#gp-topbar a.tb-home{color:#fff!important;font-weight:700}',
-      /* 追蹤清單愛心（列表與單品頁共用） */
-      '.gp-track-host{position:relative!important}',
-      '.gp-track{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);border:1px solid #e3e6e6;box-shadow:0 1px 4px rgba(0,0,0,.12);cursor:pointer;padding:0;z-index:20;display:flex;align-items:center;justify-content:center;transition:transform .15s ease,border-color .15s,background .15s}',
-      '.gp-track:before{content:"";position:absolute;width:44px;height:44px;left:-5px;top:-5px}',
-      '.gp-track:hover{transform:scale(1.06)}.gp-track svg{width:21px;height:21px;pointer-events:none}',
-      '.gp-track.on{background:#FFF3F1;border-color:#F4C7C2}.gp-track.on path{fill:#E23B2E;stroke:#E23B2E}',
-      '.gp-track.pop{animation:gpTrackPop .22s ease}@keyframes gpTrackPop{50%{transform:scale(1.25)}}',
-      '#gp-track-toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:10020;background:#232F3E;color:#fff;border-radius:24px;padding:10px 16px;box-shadow:0 5px 18px rgba(0,0,0,.28);font-size:13px;white-space:nowrap}',
-      '#gp-track-toast a{color:#FFD814!important;font-weight:800;margin-left:10px}',
       /* ---- 配色（暖白安心底 + 珊瑚橙催單 + 綠信任 + 金精緻；更亮更喜悅） ---- */
       ':root{--bg:#FFF7EF;--ink:#2B201A;--ink2:#8A7A6C;--buy:#FF5B2E;--buy2:#FF8A5B;--line:#06C755;--gold:#CDA349;--card:#fff;--hair:#F1E7D9;--wine:#2E1C24}',
       'body,td,th,select,input,textarea,button,a{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif!important}',
@@ -605,11 +596,6 @@
   var GCATS=[{"i":"681206","n":"迪士尼","s":[["1541427","11/10新品-米奇雪精靈系列",55],["1541022","11/4新品-冬季系列",41],["1530358","8/28新品-達菲鳥舞落葉系列",38],["1523064","7/3新品-達菲甜甜圈系列",24],["1518357","6/5新品",35],["1518356","6/3新品",12],["1518355","達菲20週年系列",57],["1519704","其他",1187]]},{"i":"653720","n":"日本好市多","s":[["1364630","藥品/保健類",304],["1364631","零食類",374],["1364632","食品/酒類",427],["1364633","生活用品類",510],["1364634","衣著類",86],["1364635","美妝用品類",113],["1364636","文具類",34],["1364637","沐浴類",57]]},{"i":"654002","n":"便利商店","s":[["1365721","7-11",772],["1365722","family mart",176],["1365723","lawson",35]]},{"i":"653722","n":"量販店","s":[["1364642","零食類",915],["1364643","調味料",99],["1364644","糖果/巧克力",226],["1364645","其他零嘴小吃",213],["1402772","酒類",2]]},{"i":"653718","n":"MDM批發","s":[["1536504","DHC保健食品",5],["1450733","調味料",6],["1579264","清潔用品",18],["1450734","防蚊防蟲",16],["1450730","食品零食",222],["1450731","美妝・美妝小物",53],["1450729","入浴球",9],["1463220","瑪利歐系列",19],["1464923","OK繃系列",4],["1464918","三麗鷗系列",27],["1464921","寶可夢系列",3],["1463222","吉伊卡哇系列",60],["1463225","星之卡比系列",0],["1464919","森林家族系列",0],["1463226","トミカ玩具車",0],["1463227","麵包超人系列",29],["1463224","盒玩",0],["1450732","其它",182]]},{"i":"653726","n":"日本藥妝","s":[["1364650","日本處方簽專區",53],["1364651","藥品類",229],["1528345","Atomy",14]]},{"i":"713983","n":"茅乃舍","s":[]},{"i":"654004","n":"百貨禮盒","s":[["1375358","小倉山莊",33],["1559106","GRAMERCY NEWYORK",9],["1439404","GOD BLESS BUTTER 神之手",3],["1415451","GALLETE au BEURRE",17],["1415450","NY紐約起司蛋捲",8],["1375359","Tulip Rose",10],["1376695","YOKU MOKU",37],["1375360","Audrey 花束餅乾",19],["1376693","Sugar Butter Tree",15],["1376694","鎌倉五郎(半月)",4],["1376696","GATEAU FESTA HARADA",9],["1376690","東京牛奶起司工廠 Tokyo Milk cheese factory",7],["1415453","AND THE FRIET薯條餅乾",13],["1375362","上野風月堂/東京風月堂/神戶風月堂",42],["1375363","桂新堂",9],["1376847","福砂屋",7],["1394180","東京芭娜娜/迪士尼聯名",28],["1428921","FRANCAJS",7],["1375361","其他品牌",216],["1376697","名古屋蝦餅",3],["1439407","Mary's 巧克力",13],["1439411","Number sugar",5],["1439412","一創堂",6],["1439413","Sable Michelle 周遊世界餅乾罐",25],["1439414","銀座菊廼舎",4],["1439415","銀座西",5],["1439416","東京巧克力工廠",4],["1439450","Press Butter Sand",13],["1439452","PARIS BUTTER CHOCOLAT",7],["1439453","神戶布丁",4],["1439454","BENIYA 松鼠核桃",2],["1439457","CoroCoro waffle cube",4],["1439458","Cream cheese cake",3],["1439487","TOKYO ひよこ",2],["1439488","captain sweets burger",13],["1439495","Tokyo Corne Fleuri玫瑰花巧克力",2],["1439496","Sabrina小花酥餅",16],["1439503","BRULEE MERIZE布蕾",7],["1459558","BUTTER STATE's",10],["1459559","Apple & Butter",3],["1459562","喫茶店",8],["1459564","calbee",23],["1552628","TOKYO RUSK",8],["1552656","Colombin",4],["1571623","RAMEN CLUB 拉麵餅乾",6]]},{"i":"684454","n":"台北現貨","s":[]}];
   // 多關鍵字過濾狀態：null = 不過濾；array = [token1, token2, ...]（全部 lowercase，AND 匹配）
   var gpFilter = null;
-  var gpRawTokens = [];
-  var gpAllItems = [];
-  var gpSearchBusy = false;
-  var gpSearchComplete = true;
-  var gpSearchStatus = '';
   var gpSearchScopeNorm = '';
   function gpScopeText() {
     var parts = [];
@@ -631,23 +617,6 @@
       seen[t] = 1;
       return true;
     });
-  }
-  function gpRawTokenize(v) {
-    var seen = {};
-    return (v || '').trim().split(/[\s　]+/).filter(Boolean).filter(function (t) {
-      if (seen[t]) return false; seen[t] = 1; return true;
-    });
-  }
-  function gpQueryVariants(raw) {
-    var out = [], seen = {};
-    function add(v) { v = String(v || '').trim(); if (v && !seen[v]) { seen[v] = 1; out.push(v); } }
-    add(raw); add(gpNorm(raw));
-    var nr = gpNorm(raw), cr = gpCompact(nr);
-    for (var i = 0; i < GP_SYN.length; i++) {
-      var hit = GP_SYN[i].some(function (v) { var n = gpNorm(v); return n === nr || gpCompact(n) === cr; });
-      if (hit) GP_SYN[i].forEach(add);
-    }
-    return out;
   }
   function gpItemHaystack(p) {
     return gpNorm([
@@ -718,9 +687,8 @@
       else { var items = gatherProducts(); renderPrettyGrid(items); refreshSearchBar(); }
       return;
     }
-    gpRawTokens = gpRawTokenize(v);
     gpFilter = gpTokenize(v);
-    var firstKw = gpRawTokens[0] || v;
+    var firstKw = gpFilter[0] || v;
     var gpqParam = gpFilter.length > 1 ? ('&gpq=' + encodeURIComponent(v)) : '';
     if (inCat) {
       // 分類內 → 用 kwpcls=y 搜該分類全部商品（不只當頁 40 筆）
@@ -969,109 +937,36 @@
     }
     return max;
   }
-  function gpNativeTotal(doc) {
-    var rc = doc.querySelector('[name="RecordCount"],#RecordCount');
-    var n = rc ? parseInt(rc.value || rc.getAttribute('value'), 10) : NaN;
-    if (!isNaN(n)) return n;
-    var text = (doc.body && doc.body.innerText) || '';
-    var m = text.match(/共\s*([\d,]+)\s*筆/);
-    return m ? parseInt(m[1].replace(/,/g, ''), 10) : 0;
-  }
-  function gpQueryUrl(keyword) {
-    var u = new URL(location.href);
-    u.searchParams.set('kw', keyword);
-    ['gpq', 'gpdebug', 'to_p', 'p'].forEach(function (k) { u.searchParams.delete(k); });
-    return u.pathname + '?' + u.searchParams.toString();
-  }
-  function gpPostBody(doc, pageNo, total) {
-    var body = new URLSearchParams(), form = doc.querySelector('form#form1,form[name="form1"]');
-    if (form) [].forEach.call(form.elements || [], function (el) {
-      if (!el.name || el.disabled || ((el.type === 'checkbox' || el.type === 'radio') && !el.checked)) return;
-      body.append(el.name, el.value || '');
-    });
-    body.set('fromForm1', 'Y'); body.set('p', String(pageNo)); body.set('RecordCount', String(total));
-    return body.toString();
-  }
-  function gpMergeItems(target, items) {
-    var seen = {}; target.forEach(function (p) { seen[p.psn] = 1; });
-    items.forEach(function (p) { if (!seen[p.psn]) { seen[p.psn] = 1; target.push(p); } });
-    return target;
-  }
-  function gpSearchCacheKey() {
-    return 'grand_search_items_v7:' + location.pathname + ':' + gpRawTokens.join('|');
-  }
-  function gpLoadSearchCache() {
-    if (!gpRawTokens.length) return [];
-    try {
-      var c = JSON.parse(sessionStorage.getItem(gpSearchCacheKey()) || 'null');
-      return c && Date.now() - c.ts < 15 * 60 * 1000 && Array.isArray(c.items) ? c.items : [];
-    } catch (_) { return []; }
-  }
-  function gpSaveSearchCache(items) {
-    if (!gpRawTokens.length) return;
-    try { sessionStorage.setItem(gpSearchCacheKey(), JSON.stringify({ ts: Date.now(), items: items })); } catch (_) {}
-  }
-  function gpDelay() { return new Promise(function (resolve) { setTimeout(resolve, 280); }); }
   var GP_MAX_FETCH_PAGES = 15; // 節流上限：避免多關鍵字搜尋時把 Shop2000 整批分頁掃光，觸發「請放慢操作速度」限流
   // 多關鍵字搜尋時，原生引擎只用第一個字搜，命中可能跨多個原生分頁；
   // 這裡把剩下的分頁一頁一頁抓回來（同網域 fetch，帶 cookie），合併後再做 AND 過濾，才不會漏掉沒出現在第 1 頁的商品。
   // 2026-06-26 James 核定加入。
   function gpExpandMultiPage(baseItems) {
-    var raws = gpRawTokens.length ? gpRawTokens : gpFilter.slice();
-    var probes = [], chain = Promise.resolve();
-    gpSearchBusy = true; gpSearchComplete = false; gpAllItems = baseItems.slice();
-    gpSearchStatus = '搜尋中…正在比較關鍵字範圍'; renderPrettyGrid(gpAllItems);
-    raws.forEach(function (raw, tokenIndex) {
-      gpQueryVariants(raw).forEach(function (variant) {
-        chain = chain.then(gpDelay).then(function () {
-          return fetch(gpQueryUrl(variant), { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
-            var doc = new DOMParser().parseFromString(html, 'text/html');
-            probes.push({ tokenIndex: tokenIndex, raw: raw, variant: variant, doc: doc, total: gpNativeTotal(doc), items: gpParseDoc(doc) });
-          });
+    var max = gpMaxNativePage(document);
+    if (max <= 1) return Promise.resolve(baseItems);
+    var capped = Math.min(max, GP_MAX_FETCH_PAGES);
+    var cleanUrl = location.href.replace(/[?&]to_p=\d+/, '');
+    var sep = cleanUrl.indexOf('?') >= 0 ? '&' : '?';
+    var all = baseItems.slice(), seen = {};
+    baseItems.forEach(function (p) { seen[p.psn] = 1; });
+    var chain = Promise.resolve();
+    for (var pg = 2; pg <= capped; pg++) {
+      (function (pageNo) {
+        chain = chain.then(function () {
+          return new Promise(function (resolve) { setTimeout(resolve, 280); }); // 節流間隔
+        }).then(function () {
+          return fetch(cleanUrl + sep + 'to_p=' + pageNo, { credentials: 'same-origin' })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var items = gpParseDoc(doc);
+              items.forEach(function (it) { if (!seen[it.psn]) { seen[it.psn] = 1; all.push(it); } });
+              gpDiag('expand-page', { page: pageNo, count: items.length, total: all.length });
+            }).catch(function () {});
         });
-      });
-    });
-    return chain.then(function () {
-      var groups = raws.map(function (raw, i) {
-        var ps = probes.filter(function (p) { return p.tokenIndex === i; });
-        return { raw: raw, probes: ps, total: ps.reduce(function (n, p) { return n + p.total; }, 0) };
-      });
-      groups.sort(function (a, b) { return a.total - b.total; });
-      var anchor = groups[0], budget = Math.max(0, GP_MAX_FETCH_PAGES - anchor.probes.length), scanned = 0, advertised = anchor.total;
-      gpAllItems = baseItems.slice();
-      gpDiag('anchor-selected', { anchor: anchor.raw, total: anchor.total, candidates: groups.map(function (g) { return { token: g.raw, total: g.total }; }) });
-      var pages = [], maxByProbe = [];
-      anchor.probes.forEach(function (p) {
-        scanned += p.items.length; gpMergeItems(gpAllItems, p.items);
-        maxByProbe.push({ probe: p, max: Math.max(gpMaxNativePage(p.doc), Math.ceil(p.total / 40)) });
-      });
-      for (var pg = 2; budget > 0; pg++) {
-        var added = false;
-        maxByProbe.forEach(function (x) { if (budget > 0 && pg <= x.max) { pages.push({ probe: x.probe, page: pg }); budget--; added = true; } });
-        if (!added) break;
-      }
-      gpSearchStatus = '搜尋中… 已掃描 ' + scanned + '／' + advertised + ' 筆'; renderPrettyGrid(gpAllItems);
-      var work = Promise.resolve();
-      pages.forEach(function (job) {
-        work = work.then(gpDelay).then(function () {
-          return fetch(gpQueryUrl(job.probe.variant), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: gpPostBody(job.probe.doc, job.page, job.probe.total) })
-            .then(function (r) { return r.text(); }).then(function (html) {
-              var doc = new DOMParser().parseFromString(html, 'text/html'), items = gpParseDoc(doc);
-              scanned += items.length; gpMergeItems(gpAllItems, items);
-              gpSearchStatus = '搜尋中… 已掃描 ' + scanned + '／' + advertised + ' 筆';
-              gpDiag('expand-page', { keyword: job.probe.variant, page: job.page, count: items.length, merged: gpAllItems.length }); renderPrettyGrid(gpAllItems);
-            });
-        });
-      });
-      return work.then(function () {
-        gpSearchBusy = false; gpSearchComplete = true;
-        gpSearchStatus = scanned < advertised ? ('已掃描前 ' + scanned + ' 筆（共 ' + advertised + ' 筆），請再加一個關鍵字縮小範圍') : ('已掃描 ' + scanned + ' 筆');
-        gpSaveSearchCache(gpAllItems);
-        renderPrettyGrid(gpAllItems); return gpAllItems;
-      });
-    }).catch(function (err) {
-      gpSearchBusy = false; gpSearchComplete = true; gpSearchStatus = '搜尋暫時中斷，請稍後再試'; gpDiag('expand-error', String(err)); renderPrettyGrid(gpAllItems); return gpAllItems;
-    });
+      })(pg);
+    }
+    return chain.then(function () { return all; });
   }
   function gatherProducts() {
     return gpParseDoc(document);
@@ -1143,106 +1038,10 @@
     var g = document.querySelector('#buyGs'), c = document.getElementById('gp-cnt');
     if (c) c.textContent = g ? (g.innerText.trim() || '0') : '0';
   }
-  var GP_TRACK_CACHE = 'grand_tracking_v1';
-  var GP_TRACK_PENDING = 'grand_tracking_pending';
-  var gpTracked = {};
-  var gpTrackLoaded = false;
-  var gpTrackPromise = null;
-  function gpTrackSvg() {
-    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.2 3.5 8.8A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 8.5 1.1c0 6.4-8.5 11.7-8.5 11.7Z" fill="none" stroke="#565959" stroke-width="1.8" stroke-linejoin="round"/></svg>';
-  }
-  function gpTrackSet(psn, on) {
-    if (on) gpTracked[String(psn)] = 1; else delete gpTracked[String(psn)];
-    try { sessionStorage.setItem(GP_TRACK_CACHE, JSON.stringify({ ts: Date.now(), psns: Object.keys(gpTracked) })); } catch (e) {}
-    var bs = document.querySelectorAll('.gp-track[data-psn="' + String(psn).replace(/"/g, '') + '"]');
-    for (var i = 0; i < bs.length; i++) {
-      bs[i].classList.toggle('on', !!on);
-      bs[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-      var label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
-      bs[i].setAttribute('aria-label', label); bs[i].title = label;
-    }
-    gpSyncNativeTrackButton(psn);
-  }
-  function gpTrackToast(message, withLink) {
-    var old = document.getElementById('gp-track-toast'); if (old) old.remove();
-    var t = document.createElement('div'); t.id = 'gp-track-toast';
-    t.textContent = message;
-    if (withLink) { var a = document.createElement('a'); a.href = '/member/my_box'; a.textContent = '查看'; t.appendChild(a); }
-    document.body.appendChild(t); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
-  }
-  function gpTrackingLoginResponse(r, html) {
-    return /\/shop2000_prog\/member\/mem_login/i.test((r && r.url) || '') || /form_login_mem|id=["']?pwboss/i.test(html || '');
-  }
-  function gpLoadTracking(force) {
-    if (gpTrackPromise && !force) return gpTrackPromise;
-    if (!force) {
-      try {
-        var c = JSON.parse(sessionStorage.getItem(GP_TRACK_CACHE) || 'null');
-        if (c && Date.now() - c.ts < 90000 && Array.isArray(c.psns)) {
-          gpTracked = {}; c.psns.forEach(function (p) { gpTracked[String(p)] = 1; }); gpTrackLoaded = true;
-          return Promise.resolve(gpTracked);
-        }
-      } catch (e) {}
-    }
-    gpTrackPromise = fetch('/member/my_box', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) {
-      return r.text().then(function (html) {
-        if (!r.ok || gpTrackingLoginResponse(r, html)) throw new Error('login');
-        var doc = new DOMParser().parseFromString(html, 'text/html'), next = {};
-        [].forEach.call(doc.querySelectorAll('img.pimg[psn]'), function (im) { next[String(im.getAttribute('psn'))] = 1; });
-        gpTracked = next; gpTrackLoaded = true;
-        try { sessionStorage.setItem(GP_TRACK_CACHE, JSON.stringify({ ts: Date.now(), psns: Object.keys(gpTracked) })); } catch (e) {}
-        return gpTracked;
-      });
-    }).catch(function () { gpTrackLoaded = true; return gpTracked; });
-    return gpTrackPromise;
-  }
-  function gpTrackButton(psn) {
-    var on = !!gpTracked[String(psn)], label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
-    return '<button type="button" class="gp-track' + (on ? ' on' : '') + '" data-psn="' + gpEsc(psn) + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + label + '" title="' + label + '">' + gpTrackSvg() + '</button>';
-  }
-  function gpToggleTracking(psn, button) {
-    psn = String(psn || ''); if (!psn || (button && button.disabled)) return Promise.resolve(false);
-    var was = !!gpTracked[psn], want = !was;
-    gpTrackSet(psn, want);
-    if (button) { button.disabled = true; button.classList.remove('pop'); void button.offsetWidth; button.classList.add('pop'); }
-    var body = (want ? 'psn=' : 'delsn=') + encodeURIComponent(psn);
-    return fetch('/member/my_box', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: body }).then(function (r) {
-      return r.text().then(function (html) {
-        if (!r.ok) throw new Error('http');
-        if (gpTrackingLoginResponse(r, html)) {
-          gpTrackSet(psn, was);
-          try { sessionStorage.setItem(GP_TRACK_PENDING, JSON.stringify({ psn: psn, ts: Date.now() })); } catch (e) {}
-          openGrandLogin(); return false;
-        }
-        gpTrackToast(want ? '已加入追蹤清單' : '已從追蹤清單移除', want);
-        return true;
-      });
-    }).catch(function () { gpTrackSet(psn, was); gpTrackToast('加入失敗，請稍後再試', false); return false; }).then(function (ok) {
-      if (button) button.disabled = false; return ok;
-    });
-  }
-  function gpResumePendingTracking() {
-    var p = null;
-    try { p = JSON.parse(sessionStorage.getItem(GP_TRACK_PENDING) || 'null'); } catch (e) {}
-    if (!p || !p.psn || Date.now() - p.ts > 10 * 60 * 1000) { try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} return; }
-    gpLoadTracking().then(function () {
-      if (gpTracked[String(p.psn)]) { try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} return; }
-      gpToggleTracking(String(p.psn)).then(function (ok) { if (ok) try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} });
-    });
-  }
-  function gpSyncNativeTrackButton(psn) {
-    var b = document.querySelector('[data-gp-native-track]'); if (!b || String(b.getAttribute('data-psn')) !== String(psn)) return;
-    b.textContent = gpTracked[String(psn)] ? '已在追蹤清單 ✓' : '加入追蹤清單';
-  }
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
     items = gpApplyFilter(items);
     gpDiag('render-grid', { items: items.length, filter: gpFilter, scope: gpSearchScopeNorm });
-    var status = document.getElementById('gp-search-status'); if (status) status.textContent = gpSearchStatus;
-    if (!items.length && gpFilter && !gpSearchComplete) {
-      grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;color:#666;font-size:14px;">搜尋中…</div>';
-      gpSyncCount(); return;
-    }
     if (!items.length && gpFilter) {
       grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;color:#666;font-size:14px;">本分類內找不到符合「' + gpEsc(gpFilter.join(' ')) + '」的商品</div>';
       gpSyncCount();
@@ -1252,7 +1051,7 @@
       var price = p.nt ? ('NT$' + p.nt + '<small> 起</small>') : '<small>詢價</small>';
       var full = p.img.replace(/-(\d+)\.jpg/, '-$1o.jpg');
       return '<div class="gp-card" data-psn="' + gpEsc(p.psn) + '">' +
-        '<div class="gp-imw gp-track-host"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy">' + gpTrackButton(p.psn) + '</div>' +
+        '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy"></div>' +
         '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
         '<div class="gp-dlv">日本直送・原裝到府</div>' +
         '<div class="gp-brief"></div>' +
@@ -1264,7 +1063,6 @@
       var psn = c.getAttribute('data-psn'), r = gpRules[psn];
       if (r) gpApplyBriefToCard(c, r);
     });
-    gpLoadTracking().then(function () { Object.keys(gpTracked).forEach(function (psn) { gpTrackSet(psn, true); }); });
     gpSyncCount();
   }
   function gpApplyBriefToCard(card, rule) {
@@ -1284,14 +1082,10 @@
       var gpqM = location.search.match(/[?&]gpq=([^&]*)/);
       var kwM  = location.search.match(/[?&]kw=([^&]*)/);
       var raw  = gpqM ? gpqM[1] : (kwM ? kwM[1] : '');
-      if (raw) {
-        var decoded = decodeURIComponent(raw.replace(/\+/g, ' '));
-        gpRawTokens = gpRawTokenize(decoded); gpFilter = gpTokenize(decoded);
-      }
+      if (raw) gpFilter = gpTokenize(decodeURIComponent(raw.replace(/\+/g, ' ')));
     }
     gpSearchScopeNorm = gpNorm(gpScopeText());
     var items = gatherProducts();
-    gpMergeItems(items, gpLoadSearchCache());
     if (items.length < 4 && !gpFilter) {
       gpDiag('skip-build', { reason: 'insufficient-items-no-query', items: items.length, url: location.href });
       return; // 商品還沒載好且沒有搜尋需求就先不做
@@ -1306,7 +1100,7 @@
         '@media(min-width:760px){#gp-grid{grid-template-columns:repeat(4,1fr);gap:16px}}',
         '.gp-card{background:#fff;border:1px solid #e3e6e6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}',
         '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
-        '.gp-imw{padding:10px;position:relative}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
+        '.gp-imw{padding:10px}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
         '.gp-bd{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}',
         '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:55px}',
         '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
@@ -1369,7 +1163,7 @@
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
       gpSearchBar() + gpCatNav(liveCats) +
-      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-grid"></div>';
+      '<div id="gp-head"><div class="t">精選商品</div><div class="s">選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）</div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
@@ -1419,8 +1213,6 @@
 
     // 事件委派
     wrap.addEventListener('click', function (e) {
-      var track = e.target.closest('.gp-track');
-      if (track) { e.preventDefault(); e.stopPropagation(); gpToggleTracking(track.getAttribute('data-psn'), track); return; }
       var im = e.target.closest('.im');
       if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
       var card = e.target.closest('.gp-card'); if (!card) return;
@@ -1475,15 +1267,10 @@
     // 手打數字後立刻規格化(失焦/按Enter)
     wrap.addEventListener('change', function (e) { if (e.target.classList.contains('n')) e.target.value = clampQty(e.target.value); });
     wrap.addEventListener('keydown', function (e) { if (e.target.classList.contains('n') && e.key === 'Enter') { e.target.value = clampQty(e.target.value); e.target.blur(); } });
-    gpAllItems = items.slice();
-    gpSearchComplete = !gpFilter;
-    if (gpFilter && gpFilter.length > 1) {
-      [].forEach.call(document.querySelectorAll('[to_p]'), function (el) { var p = el.closest('ul,ol,table,div'); if (p) p.style.setProperty('display', 'none', 'important'); });
-    }
     renderPrettyGrid(items);
     // 多關鍵字搜尋（gpFilter 超過1個字）→ 背景把原生其餘分頁也抓回來合併過濾，避免漏掉不在第1頁的商品
-    if (gpFilter) {
-      gpExpandMultiPage(items);
+    if (gpFilter && gpFilter.length > 1) {
+      gpExpandMultiPage(items).then(function (allItems) { renderPrettyGrid(allItems); });
     }
     // 桌面拖曳橫向滾動分類列（Windows 無觸控滑修補）
     [].forEach.call(wrap.querySelectorAll('.gc-mainrow, .gc-subrow'), attachDragScroll);
@@ -1496,8 +1283,7 @@
       clearTimeout(t); t = setTimeout(function () {
         var pls2 = document.querySelectorAll('[id^="plist_tb"]');
         for (var k = 0; k < pls2.length; k++) pls2[k].style.setProperty('display', 'none', 'important');
-        var it = gatherProducts();
-        if (it.length) { gpMergeItems(gpAllItems, it); renderPrettyGrid(gpAllItems); }
+        var it = gatherProducts(); if (it.length) renderPrettyGrid(it);
       }, 300);
     });
     try { obs.observe(watch, { childList: true, subtree: true }); } catch (e) {}
@@ -1532,55 +1318,8 @@
     bar.innerHTML =
       '<a class="tb-home" href="https://grand.shop2000.com.tw/">🏠 首頁</a>' +
       '<a href="' + ORDER + '">📋 查訂單</a>' +
-      '<a href="/member/my_box">♡ 追蹤清單</a>' +
       '<a href="' + LOGIN + '">👤 會員登入 ／ 加入會員</a>';
     mw.parentNode.insertBefore(bar, mw);
-  }
-
-  function gpRenameTrackingText(root) {
-    root = root || document.body; if (!root) return;
-    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), n, nodes = [];
-    while ((n = walker.nextNode())) {
-      if (n.parentNode && !/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/i.test(n.parentNode.nodeName) && /收藏匣|收藏夾|刪除收藏/.test(n.nodeValue || '')) nodes.push(n);
-    }
-    nodes.forEach(function (x) {
-      x.nodeValue = x.nodeValue.replace(/刪除收藏/g, '移除追蹤').replace(/加入到收藏[匣夾]/g, '加入追蹤清單').replace(/收藏[匣夾]/g, '追蹤清單');
-    });
-  }
-  function gpEnhanceProductTracking() {
-    var m = location.pathname.match(/\/product\/p(\d+)/); if (!m) return;
-    var psn = m[1], tries = 0;
-    (function waitForProduct() {
-      gpRenameTrackingText();
-      var nativeBtn = null, els = document.querySelectorAll('div,button,a');
-      for (var i = 0; i < els.length; i++) if (/加入(?:到)?(?:收藏[匣夾]|追蹤清單)/.test((els[i].textContent || '').trim())) { nativeBtn = els[i]; break; }
-      if (nativeBtn && !nativeBtn.getAttribute('data-gp-native-track')) {
-        nativeBtn.setAttribute('data-gp-native-track', '1'); nativeBtn.setAttribute('data-psn', psn);
-        nativeBtn.removeAttribute('onclick');
-        nativeBtn.addEventListener('click', function (e) {
-          e.preventDefault(); e.stopPropagation();
-          try {
-            if (gpTracked[psn]) { location.href = '/member/my_box'; return; }
-            gpToggleTracking(psn, null);
-          } catch (er) { try { if (typeof my_box === 'function') my_box(); } catch (_) {} }
-        });
-      }
-      var img = document.querySelector('img.pimg[psn="' + psn + '"]') || document.querySelector('img.pimg');
-      if (img && !document.querySelector('.gp-track-detail')) {
-        var host = img.parentElement || img; host.classList.add('gp-track-host');
-        var holder = document.createElement('span'); holder.innerHTML = gpTrackButton(psn);
-        var heart = holder.firstChild; heart.classList.add('gp-track-detail');
-        heart.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); gpToggleTracking(psn, heart); });
-        host.appendChild(heart);
-      }
-      gpLoadTracking().then(function () { gpTrackSet(psn, !!gpTracked[psn]); });
-      if ((!nativeBtn || !img) && tries++ < 16) setTimeout(waitForProduct, 500);
-    })();
-  }
-  function gpWatchTrackingLabels() {
-    gpRenameTrackingText();
-    var t;
-    try { new MutationObserver(function () { clearTimeout(t); t = setTimeout(gpRenameTrackingText, 80); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
 
   // 登入彈窗（iframe 疊在本頁）：獨立開 mem_login_pop 登入後的跳轉對子網域商店是壞的
@@ -1728,9 +1467,6 @@
     if (isHome()) buildLanding();
     else if (isProductListPage()) { buildProductTopbar(); tryPrettyList(); }
     else buildMemberPanel();
-    gpWatchTrackingLabels();
-    gpEnhanceProductTracking();
-    gpResumePendingTracking();
     buildAdminEntry();
     fixCart();
     enhanceMemberLogin();
