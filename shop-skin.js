@@ -1191,6 +1191,29 @@
     }).catch(function () { return gpTracked; });
     return gpTrackPromise;
   }
+  function gpRefreshTracking() {
+    gpTrackPromise = null;
+    try { sessionStorage.removeItem(GP_TRACK_CACHE); } catch (e) {}
+    return gpLoadTracking().then(function () {
+      [].forEach.call(document.querySelectorAll('.gp-track'), function (b) {
+        var psn = b.getAttribute('data-psn'); gpTrackSet(psn, !!gpTracked[String(psn)]);
+      });
+      return gpTracked;
+    });
+  }
+  function gpCameFromTrackingList() {
+    try {
+      var u = new URL(document.referrer || '', location.href);
+      return u.origin === location.origin && u.pathname === '/member/my_box';
+    } catch (e) { return false; }
+  }
+  function gpWatchTrackingReturn() {
+    if (gpCameFromTrackingList()) gpRefreshTracking();
+    window.addEventListener('pageshow', function (e) {
+      // 瀏覽器「上一頁」可能直接從 BFCache 還原舊紅心，不會重新執行 run()。
+      if (e.persisted) gpRefreshTracking();
+    });
+  }
   function gpTrackButton(psn) {
     var on = !!gpTracked[String(psn)], label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
     return '<button type="button" class="gp-track' + (on ? ' on' : '') + '" data-psn="' + gpEsc(psn) + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + label + '" title="' + label + '">' + gpTrackSvg() + '</button>';
@@ -1679,7 +1702,7 @@
     if (isBoss()) { bossStepAside(); return; }
     injectCSS();
     if (isHome()) buildLanding();
-    else if (isProductListPage()) { buildProductTopbar(); tryPrettyList(); gpResumePendingTracking(); }
+    else if (isProductListPage()) { buildProductTopbar(); gpWatchTrackingReturn(); tryPrettyList(); gpResumePendingTracking(); }
     else buildMemberPanel();
     buildAdminEntry();
     fixCart();
