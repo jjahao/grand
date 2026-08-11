@@ -1029,7 +1029,7 @@
       });
       groups.sort(function (a, b) { return a.total - b.total; });
       var anchor = groups[0], budget = Math.max(0, GP_MAX_FETCH_PAGES - anchor.probes.length), scanned = 0, advertised = anchor.total;
-      gpAllItems = [];
+      gpAllItems = baseItems.slice();
       gpDiag('anchor-selected', { anchor: anchor.raw, total: anchor.total, candidates: groups.map(function (g) { return { token: g.raw, total: g.total }; }) });
       var pages = [], maxByProbe = [];
       anchor.probes.forEach(function (p) {
