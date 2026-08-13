@@ -896,11 +896,17 @@
         if (gc) subList = gc.s.map(function (s) { return { id: s[0], main: curMain, name: s[1] }; });
       }
       if (subList.length) {
+        var select = '<label class="gc-subselect"><span>商品分類</span><select aria-label="選擇商品分類" onchange="if(this.value)location.href=this.value"><option value="/product/' + curMain + '"' + (curSub ? '' : ' selected') + '>全部分類</option>';
+        for (var sj = 0; sj < subList.length; sj++) {
+          select += '<option value="/product/' + curMain + '/' + subList[sj].id + '"' + (subList[sj].id === curSub ? ' selected' : '') + '>' + gpEsc(gpCleanCat(subList[sj].id, subList[sj].name, true)) + '</option>';
+        }
+        select += '</select></label>';
         sr = '<div class="gc-subrow"><a class="gc-s' + (curSub ? '' : ' on') + '" href="/product/' + curMain + '">全部</a>';
         for (var j = 0; j < subList.length; j++) {
           sr += '<a class="gc-s' + (subList[j].id === curSub ? ' on' : '') + '" href="/product/' + curMain + '/' + subList[j].id + '">' + gpEsc(gpCleanCat(subList[j].id, subList[j].name, true)) + '</a>';
         }
         sr += '</div>';
+        sr = select + sr;
       }
     }
     return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
@@ -1532,9 +1538,11 @@
         '.gc-m.gc-virtual{background:#FFF4E0;color:#B12704!important;border:1px dashed #FFB100}',
         '.gc-m.gc-virtual.on{background:#B12704;color:#fff!important;border-color:#B12704}',
         '.gc-subrow{border-top:1px solid #f3f3f3;background:#FAFAFA;padding-top:8px;padding-bottom:8px}',
+        '.gc-subselect{display:none}',
         '.gc-s{flex:0 0 auto;padding:6px 12px;border-radius:16px;background:#fff;border:1px solid #e3e6e6;color:#565959!important;text-decoration:none;font-size:12.5px;white-space:nowrap}',
         '.gc-s.on{background:#FFD814;color:#0F1111!important;border-color:#FFD814;font-weight:700}',
-        '.gc-s i{font-style:normal;color:#B12704;font-size:10px}'
+        '.gc-s i{font-style:normal;color:#B12704;font-size:10px}',
+        '@media(max-width:759px){.gc-subselect{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#FAFAFA;border-top:1px solid #f3f3f3}.gc-subselect span{flex:0 0 auto;font-size:12px;font-weight:800;color:#565959}.gc-subselect select{display:block!important;min-width:0;flex:1;height:40px;border:1px solid #D5D9D9;border-radius:10px;background:#fff;color:#0F1111;padding:0 34px 0 11px;font-size:14px;font-weight:700}.gc-subrow{display:none!important}}'
       ].join('');
       document.head.appendChild(css);
     }
