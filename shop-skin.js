@@ -1367,6 +1367,7 @@
   function gpOpenDetail(psn, fallback, trigger) {
     var modal = gpEnsureDetailModal(); gpDetailLastFocus = trigger || document.activeElement;
     modal.hidden = false; document.body.classList.add('gpd-open');
+    modal.querySelector('.gpd-dialog').scrollTop = 0;
     modal.querySelector('.gpd-loading').hidden = false; modal.querySelector('.gpd-content').hidden = true; modal.querySelector('.gpd-error').hidden = true;
     gpFetchDetail(psn, fallback).then(gpShowDetail).catch(function () {
       modal.querySelector('.gpd-loading').hidden = true; modal.querySelector('.gpd-content').hidden = true; modal.querySelector('.gpd-error').hidden = false;
