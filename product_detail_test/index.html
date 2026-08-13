@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>商品詳情測試版｜GRAND 日本天倉</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>G</span><strong>GRAND 日本天倉</strong></div>
+    <div class="test-badge">隔離測試版・不影響正式站</div>
+  </header>
+
+  <main class="page">
+    <p class="hint">測試方式：點商品名稱或照片查看完整資料</p>
+    <article class="product-card">
+      <button class="favorite-card" type="button" aria-label="加入收藏" aria-pressed="false">♡</button>
+      <button class="card-image-button open-detail" type="button" aria-label="查看商品詳情">
+        <img src="https://img2.shop2000.com.tw/75210/p596/61142954-1o.jpg" alt="紐約完美起司 8入">
+      </button>
+      <div class="card-body">
+        <button class="product-name open-detail" type="button">伴手禮新品_10% ニューヨークパーフェクトチーズ NY起司餅乾8入</button>
+        <p>日本直送商品，內容量：8 pieces</p>
+        <strong class="price">NT$328 <small>起</small></strong>
+        <button class="cart-button" type="button">加入購物車</button>
+      </div>
+    </article>
+  </main>
+
+  <div class="modal" id="detailModal" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <button class="close" type="button" data-close aria-label="關閉">×</button>
+      <div class="gallery">
+        <div class="image-stage">
+          <img id="mainImage" src="" alt="">
+          <button id="prevImage" class="gallery-arrow prev" type="button" aria-label="上一張">‹</button>
+          <button id="nextImage" class="gallery-arrow next" type="button" aria-label="下一張">›</button>
+          <span id="imageCount" class="image-count"></span>
+        </div>
+        <div id="thumbs" class="thumbs" aria-label="商品圖片縮圖"></div>
+      </div>
+
+      <div class="details">
+        <div class="title-row">
+          <div>
+            <span class="eyebrow">日本直送・伴手禮新品</span>
+            <h1 id="detailTitle">ニューヨークパーフェクトチーズ<br><span>紐約完美起司</span></h1>
+          </div>
+          <button id="favoriteDetail" class="favorite-detail" type="button" aria-label="加入收藏" aria-pressed="false"><span>♡</span><small>加入收藏</small></button>
+        </div>
+
+        <dl class="meta">
+          <div><dt>分類位置</dt><dd>伴手禮新品__20260804</dd></div>
+          <div><dt>商品代碼</dt><dd><code>P2026080419420007</code></dd></div>
+          <div><dt>簡要說明</dt><dd>日本直送商品，內容量：8 pieces</dd></div>
+        </dl>
+
+        <section class="description">
+          <h2>商品說明</h2>
+          <p class="desc-title">伴手禮新品_10% ニューヨークパーフェクトチーズ 紐約完美起司</p>
+          <p>日本直送商品。</p>
+          <p>內容量：8 pieces</p>
+        </section>
+        <button class="continue-button" type="button" data-close>關閉並繼續逛商品</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
