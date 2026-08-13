@@ -909,7 +909,8 @@
         sr = select + sr;
       }
     }
-    return '<div class="gc-nav"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
+    var mobileClass = document.querySelector('.p_row.openP[psn]') ? ' gc-mobile' : '';
+    return '<div class="gc-nav' + mobileClass + '"><div class="gc-mainrow">' + mr + '</div>' + sr + '</div>';
   }
   // Windows 桌面瀏覽器無觸控滑 → 加「滑鼠」拖曳橫向滾動
   // 重點：不用 setPointerCapture（會搶走子元素 click）；touch 完全不接管（原生橫滑沒問題）；
@@ -1542,6 +1543,7 @@
         '.gc-s{flex:0 0 auto;padding:6px 12px;border-radius:16px;background:#fff;border:1px solid #e3e6e6;color:#565959!important;text-decoration:none;font-size:12.5px;white-space:nowrap}',
         '.gc-s.on{background:#FFD814;color:#0F1111!important;border-color:#FFD814;font-weight:700}',
         '.gc-s i{font-style:normal;color:#B12704;font-size:10px}',
+        '.gc-nav.gc-mobile .gc-subselect{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#FAFAFA;border-top:1px solid #f3f3f3}.gc-nav.gc-mobile .gc-subselect span{flex:0 0 auto;font-size:12px;font-weight:800;color:#565959}.gc-nav.gc-mobile .gc-subselect select{display:block!important;min-width:0;flex:1;height:40px;border:1px solid #D5D9D9;border-radius:10px;background:#fff;color:#0F1111;padding:0 34px 0 11px;font-size:14px;font-weight:700}.gc-nav.gc-mobile .gc-subrow{display:none!important}',
         '@media(max-width:759px){.gc-subselect{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#FAFAFA;border-top:1px solid #f3f3f3}.gc-subselect span{flex:0 0 auto;font-size:12px;font-weight:800;color:#565959}.gc-subselect select{display:block!important;min-width:0;flex:1;height:40px;border:1px solid #D5D9D9;border-radius:10px;background:#fff;color:#0F1111;padding:0 34px 0 11px;font-size:14px;font-weight:700}.gc-subrow{display:none!important}}'
       ].join('');
       document.head.appendChild(css);
