@@ -1292,6 +1292,11 @@
       seenParas[text] = 1; paras.push(text);
     });
     var title = (doc.title || fallback.name || '').replace(/\s+/g, ' ').trim();
+    var bodyText = ((doc.body && doc.body.innerText) || '').replace(/\s+/g, ' ').trim();
+    // Shop2000 真手機版不使用兩欄 table，而是「分類位置：值」「商品代碼：值」獨立區塊。
+    var mobileCategory = (bodyText.match(/分類位置[：:]\s*([^\s]+?)(?=\s*商品代碼[：:]|\s*一般價|$)/) || [])[1] || '';
+    var mobileCode = (bodyText.match(/商品代碼[：:]\s*([A-Za-z0-9_-]+)/) || [])[1] || '';
+    var mobileBrief = (bodyText.match(/(日本直送商品[，,。]?\s*內容量[：:]\s*[^\s]+(?:\s+(?:pieces|個入|入))?)/i) || [])[1] || '';
     var descTitle = '', descLines = [];
     paras.forEach(function (text) {
       if (!descTitle && text !== title && text.length > 12) descTitle = text;
@@ -1299,8 +1304,8 @@
     });
     return {
       psn: String(psn), title: title || fallback.name || '', images: rawImages,
-      category: gpDetailRow(doc, '分類位置') || '', code: gpDetailRow(doc, '商品代碼') || '',
-      brief: gpDetailRow(doc, '簡要說明') || fallback.brief || '',
+      category: gpDetailRow(doc, '分類位置') || mobileCategory, code: gpDetailRow(doc, '商品代碼') || mobileCode,
+      brief: gpDetailRow(doc, '簡要說明') || mobileBrief || fallback.brief || '',
       descTitle: descTitle || title || fallback.name || '', descLines: descLines
     };
   }
