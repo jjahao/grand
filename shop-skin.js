@@ -941,10 +941,14 @@
     var root = doc.getElementById('plist_tb') || doc;
     var imgs = root.querySelectorAll('img.pimg'), items = [], seen = {};
     for (var i = 0; i < imgs.length; i++) {
-      var img = imgs[i], psn = img.getAttribute('psn'); if (!psn || seen[psn]) continue; seen[psn] = 1;
-      var td = img.closest('td') || (img.parentElement && img.parentElement.parentElement);
-      var a = td ? td.querySelector('a[href*="/product/p"]') : null;
-      var txt = td ? td.innerText : '';
+      var img = imgs[i], mobileRow = img.closest('.p_row[psn],.openP[psn]');
+      // Shop2000 桌機版把 psn 放在 img，手機版則放在外層 .p_row.openP。
+      // 兩種版型都轉成同一份 item，避免手機皮膚掃描到 0 筆、下方又殘留原生清單。
+      var psn = img.getAttribute('psn') || (mobileRow && mobileRow.getAttribute('psn'));
+      if (!psn || seen[psn]) continue; seen[psn] = 1;
+      var box = img.closest('td') || mobileRow || (img.parentElement && img.parentElement.parentElement);
+      var a = box ? box.querySelector('a[href*="/product/p"]') : null;
+      var txt = box ? box.innerText : '';
       var cleaned = String(txt || '').replace(/\s+/g, ' ').replace(/會員價\s*￥?[0-9,]+/g, ' ').replace(/台幣\s*[0-9,]+/g, ' ').replace(/NT\$?\s*[0-9,]+/g, ' ').trim();
       items.push({
         psn: psn,
@@ -1080,6 +1084,13 @@
     var img = document.querySelector('img.pimg'); if (!img) return null;
     var el = img; for (var i = 0; i < 6; i++) { el = el.parentElement; if (!el) break; if (el.querySelectorAll('img.pimg').length >= 4) return el; }
     return null;
+  }
+  function gpHideNativeProductLists() {
+    var pls = document.querySelectorAll('[id^="plist_tb"]');
+    for (var i = 0; i < pls.length; i++) pls[i].style.setProperty('display', 'none', 'important');
+    // 手機版沒有 #plist_tb，每件商品是 .p_row.openP[psn]。
+    var rows = document.querySelectorAll('.p_row.openP[psn]');
+    for (var j = 0; j < rows.length; j++) rows[j].style.setProperty('display', 'none', 'important');
   }
   function ensureBuyct(v) {
     var bc = document.getElementById('buyct');
@@ -1392,8 +1403,7 @@
       document.head.appendChild(css);
     }
     // 隱藏所有原生商品清單(plist_tb 真清單 + plist_tb{數字}推薦區)，保留標題/排序/分頁
-    var pls = document.querySelectorAll('[id^="plist_tb"]');
-    for (var k = 0; k < pls.length; k++) pls[k].style.setProperty('display', 'none', 'important');
+    gpHideNativeProductLists();
     var cont = productContainer();
     // 結構
     var mw = document.getElementById('main_width');
@@ -1525,8 +1535,7 @@
     var watch = document.getElementById('main_width') || document.body;
     var t; var obs = new MutationObserver(function () {
       clearTimeout(t); t = setTimeout(function () {
-        var pls2 = document.querySelectorAll('[id^="plist_tb"]');
-        for (var k = 0; k < pls2.length; k++) pls2[k].style.setProperty('display', 'none', 'important');
+        gpHideNativeProductLists();
         var it = gatherProducts();
         if (it.length) { gpMergeItems(gpAllItems, it); renderPrettyGrid(gpAllItems); }
       }, 300);
