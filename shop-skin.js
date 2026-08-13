@@ -1169,6 +1169,7 @@
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
       var label = on ? '已在追蹤清單，再按一次移除' : '加入追蹤清單';
       b.setAttribute('aria-label', label); b.title = label;
+      var small = b.querySelector('small'); if (small) small.textContent = on ? '已收藏' : '加入收藏';
     });
   }
   function gpTrackToast(message, withLink) {
@@ -1263,6 +1264,126 @@
       gpToggleTracking(String(p.psn)).then(function (ok) { if (ok) try { sessionStorage.removeItem(GP_TRACK_PENDING); } catch (e) {} });
     });
   }
+  /* 商品詳情：只在客人點商品名稱/圖片時唯讀抓單品頁，避免列表預抓觸發 Shop2000 限流。 */
+  var gpDetailCache = {}, gpDetailPending = {}, gpDetailLastFocus = null, gpDetailIndex = 0, gpDetailTouchX = 0;
+  function gpDetailRow(doc, label) {
+    var rows = doc.querySelectorAll('tr');
+    for (var i = 0; i < rows.length; i++) {
+      var cells = rows[i].querySelectorAll('td,th');
+      if (cells.length < 2 || (cells[0].textContent || '').indexOf(label) === -1) continue;
+      return (cells[1].textContent || '').replace(/\s+/g, ' ').trim();
+    }
+    return '';
+  }
+  function gpParseDetail(doc, psn, fallback) {
+    var rawImages = [], seenImages = {};
+    [].forEach.call(doc.querySelectorAll('img[src]'), function (im) {
+      var src = im.getAttribute('src') || '';
+      if (src.indexOf('/' + psn + '-') === -1 || !/\.(jpe?g|png|webp)(\?|$)/i.test(src)) return;
+      try { src = new URL(src, location.href).href; } catch (e) {}
+      src = src.replace(/-(\d+)\.jpg(\?.*)?$/i, '-$1o.jpg$2');
+      if (!seenImages[src]) { seenImages[src] = 1; rawImages.push(src); }
+    });
+    if (!rawImages.length && fallback.img) rawImages.push(fallback.img.replace(/-(\d+)\.jpg/i, '-$1o.jpg'));
+    var paras = [], seenParas = {};
+    [].forEach.call(doc.querySelectorAll('p'), function (p) {
+      var text = (p.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text || text.length > 500 || /服務時間|Copyright|版權所有/.test(text) || seenParas[text]) return;
+      seenParas[text] = 1; paras.push(text);
+    });
+    var title = (doc.title || fallback.name || '').replace(/\s+/g, ' ').trim();
+    var descTitle = '', descLines = [];
+    paras.forEach(function (text) {
+      if (!descTitle && text !== title && text.length > 12) descTitle = text;
+      else if (text !== title && text !== descTitle) descLines.push(text);
+    });
+    return {
+      psn: String(psn), title: title || fallback.name || '', images: rawImages,
+      category: gpDetailRow(doc, '分類位置') || '', code: gpDetailRow(doc, '商品代碼') || '',
+      brief: gpDetailRow(doc, '簡要說明') || fallback.brief || '',
+      descTitle: descTitle || title || fallback.name || '', descLines: descLines
+    };
+  }
+  function gpFetchDetail(psn, fallback) {
+    psn = String(psn);
+    if (gpDetailCache[psn]) return Promise.resolve(gpDetailCache[psn]);
+    if (gpDetailPending[psn]) return gpDetailPending[psn];
+    gpDetailPending[psn] = fetch('/product/p' + encodeURIComponent(psn), { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var detail = gpParseDetail(doc, psn, fallback || {}); gpDetailCache[psn] = detail; return detail;
+      }).finally(function () { delete gpDetailPending[psn]; });
+    return gpDetailPending[psn];
+  }
+  function gpEnsureDetailModal() {
+    var modal = document.getElementById('gp-detail'); if (modal) return modal;
+    modal = document.createElement('div'); modal.id = 'gp-detail'; modal.hidden = true;
+    modal.innerHTML = '<div class="gpd-backdrop" data-gpd-close></div><section class="gpd-dialog" role="dialog" aria-modal="true" aria-labelledby="gpd-title">' +
+      '<button class="gpd-close" type="button" data-gpd-close aria-label="關閉商品詳情">×</button>' +
+      '<div class="gpd-loading" aria-live="polite">商品資料載入中…</div><div class="gpd-content" hidden>' +
+      '<div class="gpd-gallery"><div class="gpd-stage"><img id="gpd-image" alt=""><button class="gpd-arrow prev" type="button" aria-label="上一張照片">‹</button><button class="gpd-arrow next" type="button" aria-label="下一張照片">›</button><span class="gpd-count"></span></div><div class="gpd-thumbs" aria-label="商品圖片縮圖"></div></div>' +
+      '<div class="gpd-info"><div class="gpd-title-row"><div><span class="gpd-eye">日本直送・精選商品</span><h2 id="gpd-title"></h2></div><button class="gp-track gpd-track" type="button" aria-label="加入追蹤清單"><span>' + gpTrackSvg() + '</span><small>加入收藏</small></button></div>' +
+      '<dl class="gpd-meta"><div><dt>分類位置</dt><dd data-gpd="category"></dd></div><div><dt>商品代碼</dt><dd><code data-gpd="code"></code></dd></div><div><dt>簡要說明</dt><dd data-gpd="brief"></dd></div></dl>' +
+      '<section class="gpd-desc"><h3>商品說明</h3><strong data-gpd="desc-title"></strong><div data-gpd="desc-lines"></div></section><button class="gpd-continue" type="button" data-gpd-close>關閉並繼續逛商品</button></div></div>' +
+      '<div class="gpd-error" hidden><strong>商品資料暫時載入失敗</strong><p>可以改看原商品頁，或稍後再試。</p><a class="gpd-original" href="/product">查看原商品頁</a></div></section>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function (e) {
+      var close = e.target.closest('[data-gpd-close]'); if (close) { gpCloseDetail(); return; }
+      var track = e.target.closest('.gpd-track');
+      if (track) { e.preventDefault(); e.stopPropagation(); gpToggleTracking(track.getAttribute('data-psn'), track); return; }
+      var thumb = e.target.closest('.gpd-thumb'); if (thumb) { gpDetailIndex = +thumb.getAttribute('data-i') || 0; gpDrawDetailGallery(); return; }
+      if (e.target.closest('.gpd-arrow.prev')) { gpDetailIndex--; gpDrawDetailGallery(); }
+      if (e.target.closest('.gpd-arrow.next')) { gpDetailIndex++; gpDrawDetailGallery(); }
+    });
+    var stage = modal.querySelector('.gpd-stage');
+    stage.addEventListener('touchstart', function (e) { gpDetailTouchX = e.changedTouches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', function (e) {
+      var d = e.changedTouches[0].clientX - gpDetailTouchX;
+      if (Math.abs(d) > 45 && modal.__detail && modal.__detail.images.length > 1) { gpDetailIndex += d < 0 ? 1 : -1; gpDrawDetailGallery(); }
+    }, { passive: true });
+    return modal;
+  }
+  function gpDrawDetailGallery() {
+    var modal = document.getElementById('gp-detail'), d = modal && modal.__detail; if (!d) return;
+    var len = d.images.length || 1; gpDetailIndex = (gpDetailIndex % len + len) % len;
+    var image = modal.querySelector('#gpd-image'); image.src = d.images[gpDetailIndex] || ''; image.alt = d.title + ' 商品照片 ' + (gpDetailIndex + 1);
+    modal.querySelector('.gpd-count').textContent = (gpDetailIndex + 1) + ' / ' + len;
+    [].forEach.call(modal.querySelectorAll('.gpd-arrow'), function (b) { b.hidden = len < 2; });
+    [].forEach.call(modal.querySelectorAll('.gpd-thumb'), function (b, i) { b.classList.toggle('active', i === gpDetailIndex); });
+  }
+  function gpShowDetail(detail) {
+    var modal = gpEnsureDetailModal(); modal.__detail = detail; gpDetailIndex = 0;
+    modal.querySelector('#gpd-title').textContent = detail.title;
+    ['category', 'code', 'brief', 'desc-title'].forEach(function (key) { modal.querySelector('[data-gpd="' + key + '"]').textContent = detail[key === 'desc-title' ? 'descTitle' : key] || '—'; });
+    var lines = detail.descLines.length ? detail.descLines : (detail.brief ? [detail.brief] : []);
+    modal.querySelector('[data-gpd="desc-lines"]').innerHTML = lines.map(function (x) { return '<p>' + gpEsc(x) + '</p>'; }).join('');
+    var track = modal.querySelector('.gpd-track'); track.setAttribute('data-psn', detail.psn); gpTrackSet(detail.psn, !!gpTracked[detail.psn]);
+    modal.querySelector('.gpd-original').href = '/product/p' + encodeURIComponent(detail.psn);
+    modal.querySelector('.gpd-thumbs').innerHTML = detail.images.map(function (src, i) { return '<button type="button" class="gpd-thumb' + (i === 0 ? ' active' : '') + '" data-i="' + i + '" aria-label="查看第 ' + (i + 1) + ' 張照片"><img src="' + gpEsc(src) + '" alt=""></button>'; }).join('');
+    modal.querySelector('.gpd-loading').hidden = true; modal.querySelector('.gpd-error').hidden = true; modal.querySelector('.gpd-content').hidden = false;
+    gpDrawDetailGallery(); modal.querySelector('.gpd-close').focus();
+  }
+  function gpOpenDetail(psn, fallback, trigger) {
+    var modal = gpEnsureDetailModal(); gpDetailLastFocus = trigger || document.activeElement;
+    modal.hidden = false; document.body.classList.add('gpd-open');
+    modal.querySelector('.gpd-loading').hidden = false; modal.querySelector('.gpd-content').hidden = true; modal.querySelector('.gpd-error').hidden = true;
+    gpFetchDetail(psn, fallback).then(gpShowDetail).catch(function () {
+      modal.querySelector('.gpd-loading').hidden = true; modal.querySelector('.gpd-content').hidden = true; modal.querySelector('.gpd-error').hidden = false;
+      modal.querySelector('.gpd-original').href = '/product/p' + encodeURIComponent(psn);
+    });
+  }
+  function gpCloseDetail() {
+    var modal = document.getElementById('gp-detail'); if (!modal) return;
+    modal.hidden = true; document.body.classList.remove('gpd-open');
+    if (gpDetailLastFocus && gpDetailLastFocus.focus) gpDetailLastFocus.focus();
+  }
+  document.addEventListener('keydown', function (e) {
+    var modal = document.getElementById('gp-detail'); if (!modal || modal.hidden) return;
+    if (e.key === 'Escape') gpCloseDetail();
+    else if (e.key === 'ArrowLeft' && modal.__detail && modal.__detail.images.length > 1) { gpDetailIndex--; gpDrawDetailGallery(); }
+    else if (e.key === 'ArrowRight' && modal.__detail && modal.__detail.images.length > 1) { gpDetailIndex++; gpDrawDetailGallery(); }
+  });
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
     items = gpApplyFilter(items);
@@ -1291,7 +1412,7 @@
       var full = p.img.replace(/-(\d+)\.jpg/, '-$1o.jpg');
       return '<div class="gp-card" data-psn="' + gpEsc(p.psn) + '">' +
         '<div class="gp-imw"><img class="im" src="' + gpEsc(p.img) + '" data-full="' + gpEsc(full) + '" loading="lazy">' + gpTrackButton(p.psn) + '</div>' +
-        '<div class="gp-bd"><div class="gp-nm">' + gpEsc(p.name) + '</div><div class="gp-pr">' + price + '</div>' +
+        '<div class="gp-bd"><button class="gp-nm" type="button" aria-label="查看商品詳情：' + gpEsc(p.name) + '">' + gpEsc(p.name) + '</button><div class="gp-pr">' + price + '</div>' +
         '<div class="gp-dlv">日本直送・原裝到府</div>' +
         '<div class="gp-brief"></div>' +
         '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><input class="n" type="number" min="1" max="999" value="1" inputmode="numeric" title="可手打或點開選"><button class="inc" type="button">＋</button></div>' +
@@ -1348,9 +1469,9 @@
         '@media(min-width:760px){#gp-grid{grid-template-columns:repeat(4,1fr);gap:16px}}',
         '.gp-card{background:#fff;border:1px solid #e3e6e6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}',
         '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
-        '.gp-imw{padding:10px;position:relative}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:zoom-in}',
+        '.gp-imw{padding:10px;position:relative}.gp-card .im{width:100%;aspect-ratio:1/1;object-fit:contain;cursor:pointer}',
         '.gp-bd{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px;flex:1}',
-        '.gp-nm{font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:55px}',
+        '.gp-nm{width:100%;padding:0;border:0;background:none;text-align:left;font-size:13px;line-height:1.4;color:#0F1111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:55px;cursor:pointer}.gp-nm:hover{text-decoration:underline;text-decoration-color:#B8860B;text-underline-offset:3px}',
         '.gp-pr{color:#B12704;font-weight:800;font-size:19px}.gp-pr small{font-size:11px;color:#565959;font-weight:600}',
         '.gp-dlv{font-size:11px;color:#007600}',
         '.gp-brief{font-size:11.5px;color:#B12704;background:#FFF6E5;border:1px solid #FFE8B3;border-radius:6px;padding:4px 8px;margin:-2px 0 0;line-height:1.4;display:none}',
@@ -1379,6 +1500,15 @@
         '#gp-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:#FFD814;color:#0F1111;font-weight:800;font-size:15px;padding:13px 26px;border-radius:28px;box-shadow:0 8px 24px rgba(0,0,0,.28);border:0;cursor:pointer;display:flex;gap:10px;align-items:center}',
         '#gp-bar .c{background:#B12704;color:#fff;border-radius:20px;padding:2px 10px;font-size:13px}',
         '#gp-lb{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}#gp-lb img{max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:8px}',
+        /* 點商品名稱/圖片的完整詳情 */
+        'body.gpd-open{overflow:hidden!important}#gp-detail[hidden]{display:none!important}#gp-detail{position:fixed;inset:0;z-index:10030;display:grid;place-items:center;padding:24px;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}',
+        '.gpd-backdrop{position:absolute;inset:0;background:rgba(25,19,15,.7);backdrop-filter:blur(6px)}.gpd-dialog{position:relative;z-index:1;width:min(1120px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;box-shadow:0 22px 70px rgba(63,42,24,.28)}',
+        '.gpd-close{position:absolute;right:17px;top:15px;z-index:5;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.96);box-shadow:0 2px 14px rgba(0,0,0,.18);font-size:28px;line-height:1;cursor:pointer}.gpd-loading,.gpd-error{padding:90px 30px;text-align:center}.gpd-error p{color:#766e68}.gpd-original{display:inline-block;padding:12px 22px;border-radius:999px;background:#232F3E;color:#fff!important;text-decoration:none;font-weight:800}',
+        '.gpd-content{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(390px,.96fr)}.gpd-gallery{padding:28px;background:#FBF6EF;min-width:0}.gpd-stage{position:relative;display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;background:#fff;border-radius:17px;border:1px solid #EADFD3}.gpd-stage>img{display:block;width:100%;height:100%;object-fit:contain}',
+        '.gpd-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;border-radius:50%;background:#fff;box-shadow:0 3px 15px rgba(0,0,0,.22);font-size:30px;line-height:1;cursor:pointer}.gpd-arrow.prev{left:13px}.gpd-arrow.next{right:13px}.gpd-count{position:absolute;right:12px;bottom:12px;padding:6px 10px;border-radius:999px;background:rgba(34,28,23,.72);color:#fff;font-size:12px}.gpd-thumbs{display:flex;gap:10px;margin-top:13px;overflow-x:auto}.gpd-thumb{flex:0 0 72px;width:72px;height:58px;padding:2px;border:2px solid transparent;border-radius:10px;background:#fff;cursor:pointer}.gpd-thumb.active{border-color:#B98938}.gpd-thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}',
+        '.gpd-info{padding:54px 44px 42px;color:#2D2926}.gpd-title-row{display:flex;gap:20px;justify-content:space-between;align-items:flex-start}.gpd-eye{display:inline-block;margin-bottom:11px;color:#825D24;font-size:12px;font-weight:800;letter-spacing:.1em}.gpd-info h2{margin:0;font-size:27px;line-height:1.45;font-family:Georgia,"Noto Serif TC",serif}.gpd-track{position:relative!important;top:auto!important;right:auto!important;flex:0 0 74px;width:74px!important;height:66px!important;border-radius:14px!important;display:flex!important;flex-direction:column;gap:2px}.gpd-track span{line-height:1}.gpd-track small{font-size:11px;color:#565959}.gpd-track:before{display:none}',
+        '.gpd-meta{margin:28px 0 0;border-top:1px solid #EADFD3}.gpd-meta>div{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid #EADFD3}.gpd-meta dt{color:#766E68;font-size:13px}.gpd-meta dd{margin:0;font-size:14px}.gpd-meta code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#F6F2ED;padding:4px 7px;border-radius:5px}.gpd-desc{margin-top:30px}.gpd-desc h3{margin:0 0 16px;font-size:18px}.gpd-desc h3:after{content:"";display:block;width:38px;height:3px;margin-top:9px;background:#B98938}.gpd-desc strong{font-size:14px;line-height:1.7}.gpd-desc p{font-size:14px;line-height:1.7}.gpd-continue{width:100%;margin-top:22px;padding:13px;border:1px solid #2D2926;border-radius:999px;background:#fff;color:#2D2926;font-weight:800;cursor:pointer}',
+        '@media(max-width:760px){#gp-detail{padding:0;place-items:stretch}.gpd-dialog{width:100vw;max-height:100dvh;border-radius:0}.gpd-content{display:block}.gpd-gallery{padding:0}.gpd-stage{aspect-ratio:4/3;border:0;border-radius:0;touch-action:pan-y}.gpd-thumbs{padding:0 14px 12px;margin:0}.gpd-thumb{flex-basis:61px;width:61px;height:50px}.gpd-info{padding:25px 20px calc(28px + env(safe-area-inset-bottom))}.gpd-info h2{font-size:21px}.gpd-track{flex-basis:66px;width:66px!important}.gpd-meta>div{grid-template-columns:78px 1fr}.gpd-close{position:fixed;right:13px;top:calc(11px + env(safe-area-inset-top))}.gpd-continue{position:sticky;bottom:10px;background:#2D2926;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.28)}}',
         /* 搜尋列 */
         '.gp-search{display:flex;align-items:center;gap:8px;padding:10px 0 6px;position:relative}',
         '.gp-search .gps-ic{position:absolute;left:12px;font-size:15px;font-style:normal;pointer-events:none}',
@@ -1410,7 +1540,7 @@
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
       gpSearchBar() + gpCatNav(liveCats) +
-      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 搜尋商品 ・ 點圖看大圖 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-grid"></div>';
+      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 點商品名稱或照片看詳情 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-grid"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
@@ -1462,9 +1592,11 @@
     wrap.addEventListener('click', function (e) {
       var track = e.target.closest('.gp-track');
       if (track) { e.preventDefault(); e.stopPropagation(); gpToggleTracking(track.getAttribute('data-psn'), track); return; }
-      var im = e.target.closest('.im');
-      if (im) { lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex'; return; }
       var card = e.target.closest('.gp-card'); if (!card) return;
+      var detailTrigger = e.target.closest('.gp-nm,.im');
+      if (detailTrigger) {
+        gpOpenDetail(card.getAttribute('data-psn'), { name: (card.querySelector('.gp-nm') || {}).textContent || '', img: (card.querySelector('.im') || {}).src || '', brief: (card.querySelector('.gp-brief') || {}).textContent || '' }, detailTrigger); return;
+      }
       var n = card.querySelector('.n');
       if (e.target.classList.contains('inc') || e.target.classList.contains('dec')) {
         var psn1 = card.getAttribute('data-psn'), dir = e.target.classList.contains('inc') ? 1 : -1;
