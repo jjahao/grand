@@ -1808,7 +1808,8 @@
         } catch (e) { frame.src = '/forgetpw'; }
       };
       ov.addEventListener('click', function (e) { if (e.target === ov) try { ov.parentNode.removeChild(ov); } catch (_) {} });
-      startLoginWatch();
+      // 已登入會員仍可手動打開此視窗，但不應被登入監看誤判後立刻刷新。
+      if ((document.forms && document.forms['form_login_mem']) || document.getElementById('gp-permguide')) startLoginWatch();
       return true;
     } catch (e) { return false; }
   }
@@ -1822,7 +1823,8 @@
       fetch(location.href, { credentials: 'same-origin', cache: 'no-store' })
         .then(function (r) { return r.text(); })
         .then(function (t) {
-          if (t.indexOf('本分類需有權限方能瀏覽') === -1) {
+          // 訪客頁即使沒有權限紅字，仍會含原生登入表單；兩者都消失才算真的登入完成。
+          if (t.indexOf('form_login_mem') === -1 && t.indexOf('本分類需有權限方能瀏覽') === -1) {
             clearInterval(window.__gpLoginWatch); window.__gpLoginWatch = null;
             location.reload();
           }
