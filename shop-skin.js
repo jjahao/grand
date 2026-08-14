@@ -1748,6 +1748,7 @@
       if (title) title.textContent = isForgot ? '找回會員密碼' : '會員登入';
       if (forgot) forgot.textContent = isForgot ? '← 返回會員登入' : '忘記密碼？';
       if (hint) hint.textContent = isForgot ? '密碼會由 Shop2000 寄到會員登記的 Email。' : '登入成功後，本頁會自動更新顯示商品。';
+      frame.style.height = isForgot ? '380px' : '300px';
       if (!doc.getElementById('grand-member-frame-css')) {
         var css = doc.createElement('style');
         css.id = 'grand-member-frame-css';
