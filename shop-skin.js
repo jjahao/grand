@@ -37,14 +37,14 @@
     if(event && event.preventDefault){
       event.preventDefault();
     }
+    if (openLoginOverlay()) return false; // 統一使用 GRAND 皮膚彈窗，避免露出 Shop2000 舊介面
     try{
       if(typeof show_hs === 'function'){
         show_hs('iframe','/shop2000_prog/member/mem_login_pop.aspx?vdir=grand','320','400');
-        startLoginWatch(); // 原生彈窗登入後的跳轉也可能壞，皮膚自己偵測+刷新兜底
+        startLoginWatch();
         return false;
       }
     }catch(e){}
-    if (openLoginOverlay()) return false; // 獨立登入頁對子網域商店是壞的，一律改本頁彈窗
     location.href = LOGIN;
     return false;
   }
@@ -1725,22 +1725,80 @@
     mw.parentNode.insertBefore(bar, mw);
   }
 
-  // 登入彈窗（iframe 疊在本頁）：獨立開 mem_login_pop 登入後的跳轉對子網域商店是壞的
+  // 登入／忘記密碼彈窗（iframe 疊在本頁）：表單仍由 Shop2000 處理，外觀由 GRAND 皮膚統一。
   // （vdir 空→裸頁「帳號格式錯誤」；vdir=grand→404 page），所以登入一律留在本頁，
   // 由皮膚輪詢偵測登入成功後自動刷新。
+  function styleGrandMemberFrame(frame) {
+    try {
+      var doc = frame.contentDocument;
+      if (!doc || !doc.head || !doc.body) return;
+      var isForgot = /\/forgetpw(?:[/?#]|$)/i.test(frame.contentWindow.location.pathname);
+      var title = document.getElementById('gp-login-title');
+      var forgot = document.getElementById('gp-login-forgot');
+      var hint = document.getElementById('gp-login-hint');
+      if (title) title.textContent = isForgot ? '找回會員密碼' : '會員登入';
+      if (forgot) forgot.textContent = isForgot ? '← 返回會員登入' : '忘記密碼？';
+      if (hint) hint.textContent = isForgot ? '密碼會由 Shop2000 寄到會員登記的 Email。' : '登入成功後，本頁會自動更新顯示商品。';
+      if (!doc.getElementById('grand-member-frame-css')) {
+        var css = doc.createElement('style');
+        css.id = 'grand-member-frame-css';
+        css.textContent = [
+          ':root{color-scheme:light}',
+          'html,body{margin:0!important;padding:0!important;background:#fffaf5!important;color:#2b201a!important;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif!important}',
+          'body{box-sizing:border-box;min-height:250px;padding:18px 20px!important;text-align:left!important}',
+          'body>center{display:block!important;text-align:left!important}',
+          'body br:first-child{display:none}',
+          'table{width:100%!important;margin:0!important;border-collapse:collapse!important}',
+          'td{display:block!important;width:100%!important;padding:0!important;color:#2b201a!important}',
+          'div[style*="text-shadow"]{text-shadow:none!important;color:#5f5148!important;font-size:13px!important;font-weight:700!important;margin:12px 0 6px!important}',
+          'input[type=text],input[type=email],input[type=password]{box-sizing:border-box!important;width:100%!important;height:44px!important;margin:0!important;padding:9px 11px!important;border:1px solid #ddcdbf!important;border-radius:10px!important;background:#fff!important;color:#2b201a!important;font-size:16px!important;outline:none!important}',
+          'input[type=text]:focus,input[type=email]:focus,input[type=password]:focus{border-color:#cda349!important;box-shadow:0 0 0 3px rgba(205,163,73,.16)!important}',
+          '.bt_blue,.bt13,input[type=submit]{box-sizing:border-box!important;display:block!important;width:100%!important;height:44px!important;margin:14px 0 0!important;padding:11px 16px!important;border:0!important;border-radius:11px!important;background:linear-gradient(135deg,#ff6a3d,#ff4f27)!important;color:#fff!important;font-size:15px!important;font-weight:800!important;text-align:center!important;cursor:pointer!important;box-shadow:0 5px 14px rgba(255,91,46,.22)!important}',
+          '.A_add2{color:#8a6a2f!important;font-size:13px!important;text-decoration:none!important;cursor:pointer!important}',
+          '.pt15{font-size:20px!important;font-weight:900!important;text-align:center!important;color:#2b201a!important;margin:2px 0 18px!important}',
+          '.txtl{width:100%!important;line-height:1.55!important;color:#5f5148!important;font-size:13px!important}',
+          '.txtl input[name=EmailorMobi]{display:block!important;margin-top:7px!important}',
+          '.txtl div{margin-top:14px!important}',
+          '.txtl input[name=num_code]{display:inline-block!important;width:112px!important;margin:7px 8px 0 0!important}',
+          '.txtl img{height:32px!important;width:auto!important;vertical-align:middle!important;border-radius:5px!important}',
+          '.pt9{font-size:12px!important;line-height:1.6!important;color:#796b61!important;text-align:center!important}',
+          '#bg,#saving{font-family:inherit!important}'
+        ].join('');
+        doc.head.appendChild(css);
+      }
+      if (!isForgot) {
+        var nativeForgot = doc.querySelector('.A_add2');
+        if (nativeForgot) nativeForgot.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
   function openLoginOverlay() {
     try {
       if (document.getElementById('gp-login-overlay')) return true;
       var ov = document.createElement('div');
       ov.id = 'gp-login-overlay';
-      ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(35,25,22,.62);backdrop-filter:blur(3px);z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
       ov.innerHTML =
-        '<div style="position:relative;width:320px;max-width:92vw;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4);">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#2b8a3e;color:#fff;font-weight:bold;">會員登入<span id="gp-login-close" style="cursor:pointer;font-size:20px;line-height:1;padding:0 4px;">✕</span></div>' +
-        '<iframe src="' + LOGIN + '" style="width:100%;height:290px;border:0;display:block;background:#fff;"></iframe>' +
-        '<div style="padding:6px 10px;font-size:12px;color:#555;border-top:1px solid #eee;">登入成功後，本頁會自動更新顯示商品</div></div>';
+        '<div role="dialog" aria-modal="true" aria-labelledby="gp-login-title" style="position:relative;width:390px;max-width:100%;background:#fffaf5;border:1px solid rgba(205,163,73,.38);border-radius:20px;overflow:hidden;box-shadow:0 22px 60px rgba(20,12,9,.38);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 20px 12px;background:linear-gradient(135deg,#2e1c24,#5a3028);color:#fff;">' +
+        '<div><div style="font-size:11px;letter-spacing:2px;color:#e5c77f;font-weight:800;">GRAND 天倉</div><div id="gp-login-title" style="font-size:20px;font-weight:900;margin-top:3px;">會員登入</div></div>' +
+        '<button id="gp-login-close" type="button" aria-label="關閉" style="width:36px;height:36px;border:1px solid rgba(255,255,255,.25);border-radius:50%;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:20px;line-height:1;">✕</button></div>' +
+        '<iframe id="gp-login-frame" title="會員登入表單" src="' + LOGIN + '" style="width:100%;height:300px;border:0;display:block;background:#fffaf5;"></iframe>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px 16px;border-top:1px solid #f0e4d8;background:#fff;">' +
+        '<span id="gp-login-hint" style="font-size:12px;line-height:1.45;color:#75665d;">登入成功後，本頁會自動更新顯示商品。</span>' +
+        '<button id="gp-login-forgot" type="button" style="flex:0 0 auto;border:0;background:none;color:#9a742d;font-size:13px;font-weight:800;cursor:pointer;padding:7px 0;">忘記密碼？</button></div></div>';
       document.body.appendChild(ov);
       document.getElementById('gp-login-close').onclick = function () { try { ov.parentNode.removeChild(ov); } catch (e) {} };
+      var frame = document.getElementById('gp-login-frame');
+      frame.onload = function () { styleGrandMemberFrame(frame); };
+      document.getElementById('gp-login-forgot').onclick = function () {
+        try {
+          var forgot = /\/forgetpw(?:[/?#]|$)/i.test(frame.contentWindow.location.pathname);
+          frame.src = forgot ? LOGIN : '/forgetpw';
+        } catch (e) { frame.src = '/forgetpw'; }
+      };
+      ov.addEventListener('click', function (e) { if (e.target === ov) try { ov.parentNode.removeChild(ov); } catch (_) {} });
       startLoginWatch();
       return true;
     } catch (e) { return false; }
