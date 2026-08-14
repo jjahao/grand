@@ -105,6 +105,15 @@
   (function () {
     interceptLoginLinks();
     try { document.addEventListener('DOMContentLoaded', interceptLoginLinks); } catch (e) {}
+    // 皮膚的頂部列／會員引導會稍後動態插入；用事件委派確保所有新入口也不會跳去舊版裸頁。
+    try {
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a') : null;
+        if (!a || a.dataset.grandLoginBound) return;
+        if ((a.getAttribute('href') || '').indexOf('/shop2000_prog/member/mem_login_pop.aspx') === -1) return;
+        openGrandLogin(e);
+      }, true);
+    } catch (e) {}
   })();
 
   // 從目錄帶 ?gm=join/login 過來 → 在 Shop2000 網域內同站轉址到會員頁，
