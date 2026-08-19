@@ -1805,6 +1805,10 @@
         var nativeForgot = doc.querySelector('.A_add2');
         if (nativeForgot) nativeForgot.style.display = 'none';
       }
+      // 原生「加入會員」鈕（第二個 .A_add2）跳相對網址 'grand/member' → 解析成 /grand/member → 404（ISSUE-137）。
+      // 皮膚不會被注入這個 iframe 內頁，所以改不了原始碼，改由外層同源存取把它的目的地校正成完整會員頁網址。
+      var nativeJoin = doc.querySelector('.A_add2[onclick*="grand/member"]');
+      if (nativeJoin) nativeJoin.setAttribute('onclick', "show_saving();top.location.href='" + MEMBER + "';");
     } catch (e) {}
   }
 
