@@ -264,11 +264,19 @@
       /* 底部常駐購買 bar */
       '#grand-fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9000;background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;font-size:16px;font-weight:900;text-decoration:none;padding:15px 34px;border-radius:32px;box-shadow:0 8px 24px rgba(255,91,46,.5);display:flex;align-items:center;gap:9px;white-space:nowrap}',
       '#grand-fab:active{transform:translateX(-50%) scale(.97)}',
-      '#grand-member-panel{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:9001;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.96);border:1px solid rgba(205,163,73,.35);box-shadow:0 18px 38px rgba(66,35,20,.12);max-width:calc(100% - 24px);min-height:52px}@media(max-width:520px){#grand-member-panel{bottom:86px;padding:8px;gap:8px}}',
-      '#grand-member-panel a{display:inline-flex;align-items:center;justify-content:center;min-width:120px;padding:12px 16px;border-radius:999px;text-decoration:none;font-weight:800;font-size:13px;line-height:1.2;color:var(--ink);background:#fff;border:1px solid rgba(189,152,104,.35)}',
-      '#grand-member-panel a.gm-primary{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;border-color:transparent;box-shadow:0 10px 22px rgba(255,91,46,.28)}',
-      '#grand-member-panel a.gm-secondary{background:rgba(255,255,255,.96);color:var(--ink)!important}',
-      '#grand-member-panel a.gm-secondary:hover{background:rgba(255,242,231,.95)}',
+      /* 會員選單（ISSUE-136）：收合成右下角小圓鈕，點開才向上展開三顆連結。
+         舊版釘在畫面中央偏下、每頁常駐，手機三顆擠成一坨會蓋住表單/結帳的送出鍵。 */
+      '#grand-member-panel{position:fixed;right:14px;bottom:14px;z-index:9001;display:flex;flex-direction:column;align-items:flex-end;gap:10px}',
+      '@media(max-width:520px){#grand-member-panel{right:12px;bottom:calc(12px + env(safe-area-inset-bottom))}}',
+      '#gmp-links{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0 2px 2px 0;opacity:0;transform:translateY(10px) scale(.96);transform-origin:bottom right;pointer-events:none;transition:opacity .16s ease,transform .16s ease}',
+      '#grand-member-panel.gmp-open #gmp-links{opacity:1;transform:none;pointer-events:auto}',
+      '#gmp-links a{display:flex;align-items:center;gap:8px;min-width:150px;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14px;line-height:1.2;white-space:nowrap;color:var(--ink);background:#fff;border:1px solid rgba(189,152,104,.35);box-shadow:0 10px 26px rgba(66,35,20,.16)}',
+      '#gmp-links a.gm-primary{background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff!important;border-color:transparent;box-shadow:0 12px 26px rgba(255,91,46,.34)}',
+      '#gmp-links a.gm-secondary{background:rgba(255,255,255,.98);color:var(--ink)!important}',
+      '#gmp-links a.gm-secondary:active{background:rgba(255,242,231,.95)}',
+      '#gmp-toggle{width:56px;height:56px;flex:0 0 auto;padding:0;border:0;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff;font-size:23px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(255,91,46,.45);-webkit-user-select:none;user-select:none;transition:transform .16s ease,background .16s ease}',
+      '#gmp-toggle:active{transform:scale(.94)}',
+      '#grand-member-panel.gmp-open #gmp-toggle{background:#232F3E;box-shadow:0 10px 26px rgba(0,0,0,.3)}',
       '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
       '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
       '#grand-admin:hover{opacity:1;color:#888}',
@@ -419,10 +427,27 @@
     var panel = document.createElement('div');
     panel.id = 'grand-member-panel';
     panel.innerHTML =
-      '<a class="gm-primary" href="' + STORE + '">🛒 逛商品目錄</a>' +
-      '<a class="gm-secondary" href="' + MEMBER + '">👤 會員中心</a>' +
-      '<a class="gm-secondary" href="' + ORDER + '">🧾 我的訂單</a>';
+      '<div id="gmp-links">' +
+        '<a class="gm-primary" href="' + STORE + '">🛒 逛商品目錄</a>' +
+        '<a class="gm-secondary" href="' + MEMBER + '">👤 會員中心</a>' +
+        '<a class="gm-secondary" href="' + ORDER + '">🧾 我的訂單</a>' +
+      '</div>' +
+      '<button id="gmp-toggle" type="button" title="選單" aria-label="選單" aria-expanded="false">☰</button>';
     document.body.appendChild(panel);
+    var toggle = panel.querySelector('#gmp-toggle');
+    function setOpen(open) {
+      panel.classList.toggle('gmp-open', open);
+      toggle.textContent = open ? '✕' : '☰';
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOpen(!panel.classList.contains('gmp-open'));
+    });
+    // 點畫面別處就收起（連結本身會導頁，不需另外處理）
+    document.addEventListener('click', function (e) {
+      if (panel.classList.contains('gmp-open') && !panel.contains(e.target)) setOpen(false);
+    });
   }
 
   // 把原生登入框 #div_login 搬出來置中顯示
