@@ -1433,7 +1433,17 @@
   });
   function renderPrettyGrid(items) {
     var grid = document.getElementById('gp-grid'); if (!grid) return;
+    var gpRawItems = items;
     items = gpApplyFilter(items);
+    // ISSUE-147：多關鍵字（例：「MDM 禮盒」）在客人端 AND 篩完是空的 → 退回只用第一個關鍵字顯示，
+    // 避免客戶打開分享連結看到空白頁（店長端 bossStepAside 不走皮膚、不受影響）。
+    // 只在「搜尋已完成」才退回，避免分頁還沒抓齊就誤判成空。
+    var gpWidenedTo = '';
+    if (!items.length && gpFilter && gpFilter.length > 1 && gpSearchComplete) {
+      var gpFirstTok = gpFilter[0];
+      items = gpRawItems.filter(function (p) { return gpSynMatch(gpFirstTok, gpItemHaystack(p)); });
+      if (items.length) gpWidenedTo = (gpRawTokens && gpRawTokens.length ? gpRawTokens[0] : gpFilter[0]);
+    }
     // Shop2000 的 psn 是商品建立流水號；搜尋結果跨頁合併後，統一讓最新上架的商品排前面。
     // 只影響搜尋，不改動一般分類頁原本的排序。
     if (gpFilter && gpFilter.length) {
@@ -1465,6 +1475,9 @@
         '<div class="gp-row"><div class="gp-qty"><button class="dec" type="button">−</button><input class="n" type="number" min="1" max="999" value="1" inputmode="numeric" title="可手打或點開選"><button class="inc" type="button">＋</button></div>' +
         '<button class="gp-add" type="button">加入購物車</button></div></div></div>';
     }).join('');
+    if (gpWidenedTo) {
+      grid.insertAdjacentHTML('afterbegin', '<div style="grid-column:1/-1;padding:10px 14px;margin-bottom:2px;background:#FFF6E5;border:1px solid #FFE8B3;border-radius:8px;color:#8a6d00;font-size:13px;line-height:1.5;">沒有同時符合「' + gpEsc(gpRawTokens && gpRawTokens.length ? gpRawTokens.join(' ') : gpFilter.join(' ')) + '」的商品，已為您顯示「' + gpEsc(gpWidenedTo) + '」的搜尋結果。</div>');
+    }
     // 已快取的卡片立即顯示 brief（不主動預抓，避免後端速率限制「請放慢操作速度」）
     [].forEach.call(grid.querySelectorAll('.gp-card'), function (c) {
       var psn = c.getAttribute('data-psn'), r = gpRules[psn];
