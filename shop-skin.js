@@ -277,8 +277,9 @@
       '#gmp-toggle{width:56px;height:56px;flex:0 0 auto;padding:0;border:0;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,var(--buy),var(--buy2));color:#fff;font-size:23px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(255,91,46,.45);-webkit-user-select:none;user-select:none;transition:transform .16s ease,background .16s ease}',
       '#gmp-toggle:active{transform:scale(.94)}',
       '#grand-member-panel.gmp-open #gmp-toggle{background:#232F3E;box-shadow:0 10px 26px rgba(0,0,0,.3)}',
-      '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
-      '#grand-admin{position:fixed;left:6px;bottom:8px;z-index:60;font-size:11px;color:#c4c4c4;opacity:.55;cursor:pointer;padding:5px 8px;-webkit-user-select:none;user-select:none}',
+      /* ISSUE-153：原釘死 left:6px;bottom:8px 會與 Shop2000 內建底部三條線選單重疊。
+         頂角兩頁都被佔（首頁標語條／商品頁搜尋列），改放左側邊緣垂直置中＝兩頁皆空的唯一空檔。店長專用、故意做淡。 */
+      '#grand-admin{position:fixed;left:2px;top:50%;transform:translateY(-50%);bottom:auto;z-index:60;font-size:11px;color:#c4c4c4;opacity:.5;cursor:pointer;padding:6px 6px;-webkit-user-select:none;user-select:none;writing-mode:vertical-rl}',
       '#grand-admin:hover{opacity:1;color:#888}',
       '#grand-login-wrap{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}',
       '#grand-login-wrap.hide{display:none!important}',
