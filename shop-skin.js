@@ -1317,16 +1317,43 @@
     }
     return '';
   }
+  /* 詳情圖片統一入口：只收同 psn 圖片、轉成 o.jpg 大圖、去重保序。 */
+  function gpDetailAddImage(src, psn, rawImages, seenImages) {
+    src = String(src || '');
+    if (src.indexOf('/' + psn + '-') === -1 || !/\.(jpe?g|png|webp)(\?|$)/i.test(src)) return;
+    try { src = new URL(src, location.href).href; } catch (e) {}
+    src = src.replace(/-(\d+)\.jpg(\?.*)?$/i, '-$1o.jpg$2');
+    if (!seenImages[src]) { seenImages[src] = 1; rawImages.push(src); }
+  }
+  /* ISSUE-202：Shop2000 額外照片改由頁內 var imgstr='|5||1||2|' 經 showPage() 動態產生，
+     DOMParser 不執行腳本，只能從 script 文字安全抽序號；格式不合即回空陣列（fail closed，不 eval、不猜圖）。 */
+  function gpDetailImgstrSeq(doc) {
+    var scripts = doc.querySelectorAll('script');
+    for (var i = 0; i < scripts.length; i++) {
+      var m = (scripts[i].textContent || '').match(/var\s+imgstr\s*=\s*(['"])([\d|]*)\1/);
+      if (!m) continue;
+      var seq = [], seen = {}, parts = m[2].split('|');
+      for (var j = 0; j < parts.length; j++) {
+        if (!parts[j]) continue;
+        if (!/^\d{1,4}$/.test(parts[j]) || seq.length >= 100) return [];
+        if (!seen[parts[j]]) { seen[parts[j]] = 1; seq.push(parts[j]); }
+      }
+      return seq;
+    }
+    return [];
+  }
   function gpParseDetail(doc, psn, fallback) {
     var rawImages = [], seenImages = {};
     [].forEach.call(doc.querySelectorAll('img[src]'), function (im) {
-      var src = im.getAttribute('src') || '';
-      if (src.indexOf('/' + psn + '-') === -1 || !/\.(jpe?g|png|webp)(\?|$)/i.test(src)) return;
-      try { src = new URL(src, location.href).href; } catch (e) {}
-      src = src.replace(/-(\d+)\.jpg(\?.*)?$/i, '-$1o.jpg$2');
-      if (!seenImages[src]) { seenImages[src] = 1; rawImages.push(src); }
+      gpDetailAddImage(im.getAttribute('src'), psn, rawImages, seenImages);
     });
-    if (!rawImages.length && fallback.img) rawImages.push(fallback.img.replace(/-(\d+)\.jpg/i, '-$1o.jpg'));
+    if (!rawImages.length && fallback.img) { var fb = fallback.img.replace(/-(\d+)\.jpg/i, '-$1o.jpg'); seenImages[fb] = 1; rawImages.push(fb); }
+    var imgSeq = gpDetailImgstrSeq(doc);
+    if (imgSeq.length && rawImages.length) {
+      // 只用已確認同 psn 的主圖當 base 還原其餘序號，不拼別商品／別店圖片。
+      var baseMatch = rawImages[0].match(new RegExp('^(.*/)' + psn + '-\\d+o\\.jpg', 'i'));
+      if (baseMatch) imgSeq.forEach(function (n) { gpDetailAddImage(baseMatch[1] + psn + '-' + n + 'o.jpg', psn, rawImages, seenImages); });
+    }
     var paras = [], seenParas = {};
     [].forEach.call(doc.querySelectorAll('p'), function (p) {
       var text = (p.textContent || '').replace(/\s+/g, ' ').trim();
