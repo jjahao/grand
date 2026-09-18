@@ -1138,7 +1138,9 @@
       var t = e.changedTouches[0]; if (t.identifier !== s.id) return;
       var dx = t.clientX - s.x, dy = t.clientY - s.y;
       if (Math.abs(dx) < GP_SWIPE_MIN || Math.abs(dx) < GP_SWIPE_RATIO * Math.abs(dy)) return;
-      if (gpOverlayOpen() || !gpSwipeTargetOk(e.target)) return;
+      if (gpOverlayOpen()) return;
+      var endTarget = document.elementFromPoint(t.clientX, t.clientY);
+      if (!endTarget || !gpSwipeTargetOk(endTarget)) return;
       if (gpFilter && gpFilter.length) return; // 搜尋合併模式不換頁，避免丟掉合併結果
       var state = gpReadNativePaging(document);
       if (!state.ok) return;

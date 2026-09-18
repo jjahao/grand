@@ -2,6 +2,10 @@
 // 在無頭 Chromium 的 DOM fixture 上跑；不連正式站、不打 Shop2000、不碰購物車。
 // 原生分頁模擬 2026-09-18 正式站實測結構：<ul class="pgNo"><li class="dis" to_p="1">1</li><li to_p="2">2</li>…
 // 每個 li 綁 click → p=to_p; sendPage()（正式站是 jQuery 綁的，這裡用原生 addEventListener 等價模擬並計數）。
+// 手勢測試分兩層：一般 dx/dy 門檻與 overlay 情境用 JS 建構的 Touch 事件（swipe，touchmove/touchend 全程沿用
+// touchstart 的同一個 target，如實反映裝置行為，不再偽造終點 target）；終點是否落在互動元件則用真 Chromium/CDP
+// 觸控輸入（realSwipe，Input.dispatchTouchEvent）讓瀏覽器對座標做真實 hit-test，對應 ISSUE-203 覆核抓到的
+// P0 缺口：touchend.target 恆等於起點，程式必須用 document.elementFromPoint(x,y) 才認得出手指實際放開的位置。
 // 執行：node grand_store/test_issue203_pagination.mjs
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -46,7 +50,16 @@ function fixture({ cur = 1, max = 3, total = 86, native, extraBody = '' } = {}) 
     <div class="gc-nav"><div class="gc-mainrow" style="width:200px;overflow-x:auto"><a class="gc-m" href="#">分類A</a><a class="gc-m" href="#">分類B</a></div><div class="gc-subrow"><a class="gc-s" href="#">小類</a></div></div>
     <div id="gp-head"><div class="t">精選商品</div></div>
     <div id="gp-pager-top"></div>
-    <div id="gp-grid" style="height:400px">${cards(8)}</div>
+    <div id="gp-grid" style="height:400px">
+      <div id="gp-probe-row" style="display:flex;align-items:center;height:56px;white-space:nowrap">
+        <div id="gp-probe-blank" style="display:inline-block;width:120px;height:56px"></div>
+        <img class="im" id="gp-probe-img" src="x" style="display:inline-block;width:40px;height:56px">
+        <button class="gp-nm" id="gp-probe-nm" type="button" style="display:inline-block;width:60px;height:56px">名稱</button>
+        <div class="gp-qty" id="gp-probe-qty" style="display:inline-block;width:50px;height:56px"><button class="inc" style="width:50px;height:56px">＋</button></div>
+        <button class="gp-add" id="gp-probe-add" type="button" style="display:inline-block;width:80px;height:56px">加入購物車</button>
+      </div>
+      ${cards(8)}
+    </div>
     <div id="gp-pager-bottom"></div>
   </div>
   <div id="main_width"><form name="form1"><div id="page_div">${ul}${max > 1 ? '' : ''}<div class="pgCount">${total ? `共 ${total} 筆` : ''}</div></div></form></div>
@@ -90,15 +103,33 @@ const pagerState = (pos) => pg.evaluate((pos) => {
 }, pos);
 const sent = () => pg.evaluate(() => ({ sent: window.__sent, native: window.__nativeClicks, p: window.p }));
 const click = (pos, sel) => pg.evaluate(([pos, sel]) => { const b = document.querySelector(`#gp-pager-${pos} ${sel}`); if (!b) return 'missing'; b.click(); return b.disabled ? 'disabled' : 'clicked'; }, [pos, sel]);
-// 用真 Touch 事件（clientX/Y）模擬手指：start 在 from、end 在 to；targetSel 指定起點與終點元素
-const swipe = (from, to, startSel = '#gp-grid', endSel = startSel) => pg.evaluate(([from, to, startSel, endSel]) => {
+// 用真 Touch 事件（clientX/Y）模擬手指：start 在 from、end 在 to；startSel 指定起手元素（touchstart 的
+// e.target＝真實觸控起點，如實模擬）。touchmove/touchend 一律沿用同一個 Touch 物件的 target（等同真裝置：
+// 同一指頭全程 target 不變），不再另外偽造終點 target——這正是 ISSUE-203 P0 缺口的根因：真實 touchend.target
+// 永遠是起點元素，程式必須改用 elementFromPoint(x,y) 才能認出手指實際放開的位置。
+const swipe = (from, to, startSel = '#gp-grid') => pg.evaluate(([from, to, startSel]) => {
   const mk = (type, el, x, y) => new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 7, target: el, clientX: x, clientY: y })], changedTouches: [new Touch({ identifier: 7, target: el, clientX: x, clientY: y })] });
-  const s = document.querySelector(startSel), e = document.querySelector(endSel);
+  const s = document.querySelector(startSel);
   s.dispatchEvent(mk('touchstart', s, from[0], from[1]));
-  e.dispatchEvent(mk('touchmove', e, (from[0] + to[0]) / 2, (from[1] + to[1]) / 2));
-  e.dispatchEvent(mk('touchend', e, to[0], to[1]));
-}, [from, to, startSel, endSel]);
+  s.dispatchEvent(mk('touchmove', s, (from[0] + to[0]) / 2, (from[1] + to[1]) / 2));
+  s.dispatchEvent(mk('touchend', s, to[0], to[1]));
+}, [from, to, startSel]);
 const resetBusy = () => pg.evaluate(() => window.__gp.resetBusy());
+// 真 Chromium/CDP 觸控輸入（非 JS 建構的 Touch 物件）：由瀏覽器對 (x,y) 做真實 hit-test，
+// touchend 的 target／changedTouches 座標完全比照實機，用來驗證 elementFromPoint 那條修法。
+let cdp;
+async function realSwipe(from, to) {
+  if (!cdp) cdp = await ctx.newCDPSession(pg);
+  const pt = (x, y) => ({ x, y, radiusX: 5, radiusY: 5, force: 1 });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pt(from[0], from[1])] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [pt((from[0] + to[0]) / 2, (from[1] + to[1]) / 2)] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [pt(to[0], to[1])] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+const probeRect = (sel) => pg.evaluate((sel) => {
+  const r = document.querySelector(sel).getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}, sel);
 
 await it('1. 86 筆／3 頁／第 1 頁：頂底同一組「上一頁 disabled｜第 1 / 3 頁｜1 2 3｜下一頁」', async () => {
   await load({ cur: 1, max: 3, total: 86 });
@@ -176,10 +207,10 @@ await it('6. 水平 60px 換頁；30px、垂直、斜滑、按住互動元件滑
   await swipe([200, 300], [200, 100]); // 垂直
   await swipe([200, 300], [120, 220]); // 斜滑 80/80，不到 1.5 倍
   for (const sel of ['#gp-grid .gp-card .im', '#gp-grid .gp-nm', '#gp-grid .gp-track', '#gp-grid input.n', '#gp-grid .dec', '#gp-grid .inc', '#gp-grid .gp-add']) {
-    await swipe([200, 300], [100, 300], sel, '#gp-grid');   // 起點在互動元件
-    await swipe([200, 300], [100, 300], '#gp-grid', sel);   // 終點在互動元件
+    await swipe([200, 300], [100, 300], sel);   // 起點在互動元件（真實 touchstart target）
   }
   assert.deepEqual((await sent()).sent, []);
+  // 終點在互動元件的情形改用真實 CDP 觸控座標驗證，見測項 10。
   await swipe([200, 300], [140, 305]); // 60px 左滑 → 下一頁 3
   assert.deepEqual((await sent()).native, ['3']);
   await resetBusy(); await load({ cur: 2, max: 3 });
@@ -235,6 +266,26 @@ await it('9. 390 寬不橫向溢出、上一頁／下一頁點擊區 ≥44px、a
   assert.ok(m.scrollW <= m.innerW, `橫向溢出 ${m.scrollW} > ${m.innerW}`);
   assert.ok(m.prevH >= 44 && m.nextH >= 44, `點擊區高度 ${m.prevH}/${m.nextH}`);
   assert.equal(m.cur, 2); // 頂底各一個
+});
+
+await it('10. 真實 CDP 觸控（非 JS 偽造 target）：空白起手→終點精準落在加入購物車／照片／名稱／數量按鈕：0 次翻頁', async () => {
+  await load({ cur: 2, max: 3 });
+  const blank = await probeRect('#gp-probe-blank');
+  for (const sel of ['#gp-probe-add', '#gp-probe-img', '#gp-probe-nm', '#gp-probe-qty .inc']) {
+    const target = await probeRect(sel);
+    await realSwipe([blank.x, blank.y], [target.x, target.y]);
+  }
+  assert.deepEqual((await sent()).sent, [], '終點落在互動元件上仍翻頁，ISSUE-203 P0 缺口未修好');
+});
+
+await it('11. 真實 CDP 觸控：空白區起手→空白區終點且水平 ≥50px：正常翻頁 1 次', async () => {
+  await load({ cur: 2, max: 3 });
+  const r = await pg.evaluate(() => {
+    const b = document.getElementById('gp-probe-blank').getBoundingClientRect();
+    return { left: b.left, right: b.right, y: b.top + b.height / 2 };
+  });
+  await realSwipe([r.right - 5, r.y], [r.left + 5, r.y]); // 左滑 → 下一頁
+  assert.deepEqual((await sent()).native, ['3']);
 });
 
 await browser.close();
