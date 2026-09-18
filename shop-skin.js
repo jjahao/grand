@@ -1037,6 +1037,127 @@
     body.set('fromForm1', 'Y'); body.set('p', String(pageNo)); body.set('RecordCount', String(total));
     return body.toString();
   }
+  // ===== ISSUE-203 商品列表頂／底分頁 + 手機左右滑頁 =====
+  // 頁數真相只認 Shop2000 原生分頁：ul.pgNo li[to_p]（目前頁是 li.dis 且文字＝to_p）、全域 p、RecordCount／「共 N 筆」。
+  // 不從卡片數猜頁數；讀不到目前頁就回 ok:false，讓 renderer／手勢 fail soft。
+  function gpReadNativePaging(doc, win) {
+    doc = doc || document; win = win || (typeof window !== 'undefined' ? window : {});
+    var els = doc.querySelectorAll('[to_p]'), pages = {}, max = 1, cur = NaN, i, v;
+    for (i = 0; i < els.length; i++) {
+      v = parseInt(els[i].getAttribute('to_p'), 10);
+      if (isNaN(v) || v < 1) continue;
+      pages[v] = 1; if (v > max) max = v;
+      // 原生目前頁：<li class="dis" to_p="N">N</li>（文字必須等於 to_p，排除「上頁／下頁」這種文字不是頁碼的格）
+      if (isNaN(cur) && /(^|\s)dis(\s|$)/.test(els[i].className || '') && String(els[i].textContent || '').trim() === String(v)) cur = v;
+    }
+    if (isNaN(cur)) { v = parseInt(win.p, 10); if (!isNaN(v) && v >= 1) cur = v; }
+    if (isNaN(cur) && max === 1) cur = 1;
+    var total = gpNativeTotal(doc);
+    if (!total && win.RecordCount !== undefined) { v = parseInt(win.RecordCount, 10); if (!isNaN(v)) total = v; }
+    var list = Object.keys(pages).map(Number);
+    if (!isNaN(cur) && !pages[cur]) list.push(cur);
+    list.sort(function (a, b) { return a - b; });
+    var ok = !isNaN(cur) && cur >= 1 && cur <= max;
+    return { ok: ok, cur: ok ? cur : NaN, max: max, total: total, pages: ok ? list : [] };
+  }
+  var GP_PG_JUMP_KEY = 'gp_pg_jump';
+  var gpPageNavBusy = false; // 一次頁面壽命只准送出一次翻頁（換頁是整頁 POST 重載）
+  // 翻頁 adapter：頂／底控制與手勢都走這裡，最後觸發 Shop2000 既有的 li[to_p] click（p=to_p; sendPage()）。
+  // 找不到對應 li 才退到同一支原生 sendPage()；兩者都沒有就不動、回 false。
+  function gpGoNativePage(n, state, win) {
+    win = win || (typeof window !== 'undefined' ? window : {});
+    state = state || gpReadNativePaging(document, win);
+    n = parseInt(n, 10);
+    if (gpPageNavBusy || !state.ok || isNaN(n) || n < 1 || n > state.max || n === state.cur) return false;
+    var el = null, els = document.querySelectorAll('[to_p]');
+    for (var i = 0; i < els.length; i++) { if (parseInt(els[i].getAttribute('to_p'), 10) === n) { el = els[i]; break; } }
+    if (!el && typeof win.sendPage !== 'function') return false;
+    gpPageNavBusy = true;
+    setTimeout(function () { gpPageNavBusy = false; }, 4000); // 原生沒真的換頁（例如限流）時放行重試，正常情況頁面早已重載
+    try { sessionStorage.setItem(GP_PG_JUMP_KEY, '1'); } catch (e) {}
+    gpDiag('page-nav', { from: state.cur, to: n, via: el ? 'to_p' : 'sendPage' });
+    if (el) el.click(); else { win.p = String(n); win.sendPage(); }
+    return true;
+  }
+  // 同一個 renderer 畫頂／底兩組，避免文字、頁數、disabled 判斷分岔。
+  // 搜尋模式（gpFilter 非空）皮膚已把原生分頁背景合併進同一格子，不畫可操作頁碼，只給非操作提示。
+  function gpPagerHTML(state, pos, merged) {
+    if (merged) return '<div class="gp-pager gp-pager-merged" data-pos="' + pos + '">搜尋結果已合併顯示，不需換頁</div>';
+    if (!state || !state.ok) return '';
+    var cur = state.cur, max = state.max;
+    var btn = function (page, cls, label, disabled) {
+      return '<button type="button" class="gp-pg ' + cls + '" data-page="' + page + '"' + (disabled ? ' disabled aria-disabled="true"' : '') + '>' + label + '</button>';
+    };
+    var nums = state.pages.map(function (n) {
+      return '<button type="button" class="gp-pg gp-pg-num' + (n === cur ? ' cur' : '') + '" data-page="' + n + '"' + (n === cur ? ' aria-current="page"' : '') + ' aria-label="第 ' + n + ' 頁">' + n + '</button>';
+    }).join('');
+    return '<nav class="gp-pager" data-pos="' + pos + '" aria-label="商品分頁（' + (pos === 'top' ? '上方' : '下方') + '）">' +
+      btn(cur - 1, 'gp-pg-prev', '‹ 上一頁', cur <= 1) +
+      '<span class="gp-pg-info">第 <b>' + cur + '</b> / ' + max + ' 頁</span>' +
+      '<span class="gp-pg-nums">' + nums + '</span>' +
+      btn(cur + 1, 'gp-pg-next', '下一頁 ›', cur >= max) +
+      (state.total ? '<span class="gp-pg-total">共 ' + state.total + ' 筆</span>' : '') +
+      '</nav>';
+  }
+  function gpRenderPagers() {
+    var top = document.getElementById('gp-pager-top'), bot = document.getElementById('gp-pager-bottom');
+    if (!top || !bot) return null;
+    var merged = !!(gpFilter && gpFilter.length);
+    var state = merged ? null : gpReadNativePaging(document);
+    var t = gpPagerHTML(state, 'top', merged), b = gpPagerHTML(state, 'bottom', merged);
+    if (top.innerHTML !== t) top.innerHTML = t;
+    if (bot.innerHTML !== b) bot.innerHTML = b;
+    return state;
+  }
+  // 手機左右滑換頁：只在商品列表區（#gp-grid 與 .gp-pager）起手與收手；
+  // 門檻 50px 且 |dx| >= 1.5|dy|；全部 passive、不 preventDefault，垂直捲動不受影響。
+  // 起點或終點落在互動元件、分類橫滑列、數字輪，或有 overlay 開著時一律不翻頁；第一頁右滑／最後頁左滑靜默不動。
+  var GP_SWIPE_MIN = 50, GP_SWIPE_RATIO = 1.5;
+  var GP_SWIPE_SKIP = 'a,button,input,select,textarea,[contenteditable],.gp-track,.gp-nm,.im,.gp-qty,.gc-mainrow,.gc-subrow,.gc-nav,#gp-wheel-strip,#gp-wheel,#gp-detail,#gp-lb,.gp-search';
+  function gpOverlayOpen() {
+    var d = document.getElementById('gp-detail'), lb = document.getElementById('gp-lb'), w = document.getElementById('gp-wheel');
+    return !!((d && !d.hidden) || (lb && lb.style.display && lb.style.display !== 'none') || (w && /(^|\s)on(\s|$)/.test(w.className)) || /(^|\s)gpd-open(\s|$)/.test(document.body.className || ''));
+  }
+  function gpSwipeTargetOk(t) {
+    if (!t || !t.closest) return false;
+    if (!t.closest('#gp-grid,.gp-pager')) return false;
+    return !t.closest(GP_SWIPE_SKIP);
+  }
+  function gpAttachListSwipe(root, go) {
+    var st = null;
+    root.addEventListener('touchstart', function (e) {
+      st = null;
+      if (e.touches.length !== 1 || gpOverlayOpen() || !gpSwipeTargetOk(e.target)) return;
+      var t = e.touches[0]; st = { x: t.clientX, y: t.clientY, id: t.identifier };
+    }, { passive: true });
+    root.addEventListener('touchmove', function (e) { if (st && e.touches.length !== 1) st = null; }, { passive: true });
+    root.addEventListener('touchcancel', function () { st = null; }, { passive: true });
+    root.addEventListener('touchend', function (e) {
+      var s = st; st = null;
+      if (!s || !e.changedTouches.length) return;
+      var t = e.changedTouches[0]; if (t.identifier !== s.id) return;
+      var dx = t.clientX - s.x, dy = t.clientY - s.y;
+      if (Math.abs(dx) < GP_SWIPE_MIN || Math.abs(dx) < GP_SWIPE_RATIO * Math.abs(dy)) return;
+      if (gpOverlayOpen() || !gpSwipeTargetOk(e.target)) return;
+      if (gpFilter && gpFilter.length) return; // 搜尋合併模式不換頁，避免丟掉合併結果
+      var state = gpReadNativePaging(document);
+      if (!state.ok) return;
+      go(dx < 0 ? state.cur + 1 : state.cur - 1, state);
+    }, { passive: true });
+  }
+  function gpAttachPagerClicks(root) {
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('.gp-pager button[data-page]'); if (!b || b.disabled) return;
+      e.preventDefault(); e.stopPropagation(); gpGoNativePage(b.getAttribute('data-page'));
+    });
+  }
+  function gpScrollToListTop() {
+    var hit = false;
+    try { hit = sessionStorage.getItem(GP_PG_JUMP_KEY) === '1'; if (hit) sessionStorage.removeItem(GP_PG_JUMP_KEY); } catch (e) {}
+    if (!hit) return;
+    var el = document.getElementById('gp-head') || document.getElementById('gp-pager-top');
+    if (el && el.scrollIntoView) setTimeout(function () { try { el.scrollIntoView({ block: 'start' }); } catch (e) {} }, 50);
+  }
   function gpMergeItems(target, items) {
     var seen = {}; target.forEach(function (p) { seen[p.psn] = 1; });
     items.forEach(function (p) { if (!seen[p.psn]) { seen[p.psn] = 1; target.push(p); } });
@@ -1554,6 +1675,15 @@
         '#gp-wrap{max-width:1240px;margin:0 auto;padding:8px 12px 110px;background:#fff;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}',
         '#gp-head{padding:10px 2px 12px}#gp-head .t{font-size:19px;font-weight:900;color:#0F1111}#gp-head .s{font-size:12px;color:#565959}',
         '#gp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}',
+        /* ISSUE-203 頂／底分頁列 */
+        '.gp-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 8px;padding:8px 0;font-size:13px;color:#565959}',
+        '#gp-pager-top .gp-pager{margin-bottom:6px}#gp-pager-bottom .gp-pager{margin-top:14px;padding-bottom:8px}',
+        '.gp-pager-merged{padding:6px 12px;font-size:12px;color:#8a6d00;background:#FFF6E5;border:1px solid #FFE8B3;border-radius:8px;justify-content:flex-start}',
+        '.gp-pg{min-height:44px;min-width:44px;padding:0 14px;border:1px solid #D5D9D9;border-radius:22px;background:#fff;color:#0F1111;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation}',
+        '.gp-pg-num{min-width:44px;padding:0 10px}.gp-pg-num.cur,.gp-pg-num[aria-current="page"]{background:#FFD814;border-color:#FFD814;cursor:default}',
+        '.gp-pg[disabled]{opacity:.38;cursor:not-allowed;background:#f5f5f5;color:#8a8f8f}',
+        '.gp-pg-nums{display:flex;flex-wrap:wrap;gap:6px}.gp-pg-info{font-weight:700;color:#0F1111;padding:0 4px}.gp-pg-info b{color:#B12704}.gp-pg-total{font-size:12px}',
+        '@media(max-width:759px){.gp-pager{gap:6px}.gp-pg{padding:0 12px;font-size:13px}.gp-pg-info{flex-basis:100%;text-align:center;order:-1}}',
         '@media(min-width:760px){#gp-grid{grid-template-columns:repeat(4,1fr);gap:16px}}',
         '.gp-card{background:#fff;border:1px solid #e3e6e6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}',
         '.gp-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}',
@@ -1631,7 +1761,7 @@
     var wrap = document.createElement('div'); wrap.id = 'gp-wrap';
     wrap.innerHTML =
       gpSearchBar() + gpCatNav(liveCats) +
-      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 點商品名稱或照片看詳情 ・ 選數量加入 ・ 總結帳一次結帳（換頁用本頁最下方頁碼）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-grid"></div>';
+      '<div id="gp-head"><div class="t">精選商品</div><div class="s">' + (gpFilter && gpFilter.length > 1 ? '多關鍵字結果已合併顯示，不需要使用原生頁碼' : '選分類看主題 ・ 點商品名稱或照片看詳情 ・ 選數量加入 ・ 總結帳一次結帳（換頁按上下方的頁碼，手機也可在商品區左右滑）') + '</div><div id="gp-search-status" aria-live="polite"></div></div><div id="gp-pager-top"></div><div id="gp-grid"></div><div id="gp-pager-bottom"></div>';
     if (mw && mw.parentNode) mw.parentNode.insertBefore(wrap, mw); else document.body.appendChild(wrap);
     var bar = document.createElement('button'); bar.id = 'gp-bar'; bar.type = 'button';
     bar.innerHTML = '🛒 總結帳 <span class="c" id="gp-cnt">0</span> 件'; document.body.appendChild(bar);
@@ -1745,6 +1875,11 @@
       [].forEach.call(document.querySelectorAll('[to_p]'), function (el) { var p = el.closest('ul,ol,table,div'); if (p) p.style.setProperty('display', 'none', 'important'); });
     }
     renderPrettyGrid(items);
+    // ISSUE-203 頂／底分頁列 + 手機左右滑頁（皆走 gpGoNativePage → 原生 li[to_p] click）
+    gpRenderPagers();
+    gpAttachPagerClicks(wrap);
+    gpAttachListSwipe(wrap, function (n, state) { gpGoNativePage(n, state); });
+    gpScrollToListTop();
     // 多關鍵字搜尋（gpFilter 超過1個字）→ 背景把原生其餘分頁也抓回來合併過濾，避免漏掉不在第1頁的商品
     if (gpFilter) {
       gpExpandMultiPage(items);
@@ -1761,6 +1896,7 @@
         gpHideNativeProductLists();
         var it = gatherProducts();
         if (it.length) { gpMergeItems(gpAllItems, it); renderPrettyGrid(gpAllItems); }
+        gpRenderPagers(); // ISSUE-203 原生分頁列可能晚載／換頁後重畫
       }, 300);
     });
     try { obs.observe(watch, { childList: true, subtree: true }); } catch (e) {}
